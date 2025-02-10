@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тестирование (made by Rogov)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body.dark-mode {
+            background-color: #202020;
+            color: #f0f0f0;
+        }
+
+        .container.dark-mode {
+            background-color: #181818;
+        }
+
+        .dark-mode h1,
+        .dark-mode #result-container h2 {
+            color: #f0f0f0;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: #6b6b6b;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .custom-file-input {
+            display: none;
+        }
+
+        .custom-file-label {
+            background-color: #6b6b6b;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: inline-block;
+        }
+
+        .custom-file-label:hover {
+            background-color: #000;
+        }
+
+        .file-info {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #333;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .file-info.show {
+            opacity: 1;
+        }
+
+        .btn {
+            margin: 1rem 0;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .btn button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn button.active {
+            background-color: #000;
+            color: white;
+        }
+
+        .btn button:not(.active) {
+            background-color: #6b6b6b;
+            color: white;
+        }
+
+        .btn button:hover:not(.active) {
+            background-color: #000;
+        }
+
+        #nextBtn {
+            background-color: green;
+            color: white;
+        }
+
+        #nextBtn:hover {
+            background-color: rgb(0, 90, 0);
+        }
+
+        #nextBtn:active {
+            background-color: black;
+        }
+
+        #restartBtn {
+            border: none;
+            color: #fff;
+            background-color: #333;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        #restartBtn:hover {
+            background-color: #000;
+        }
+
+        #restartBtn:active {
+            color: white;
+            background-color: #000;
+        }
+
+        input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        #result-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+        }
+
+        #result-container h2 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .dropbtn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            background-color: #6b6b6b;
+            color: white;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .dropdown:hover .dropbtn {
+            background-color: #000;
+        }
+
+        .incorrect-answer {
+            background-color: #f44336 !important;
+        }
+
+        .correct-answer {
+            background-color: #4CAF50;
+        }
+
+        .partially-correct-answer {
+            background-color: #2196F3;
+        }
+
+        input[type="radio"]:checked+label,
+        input[type="checkbox"]:checked+label {
+            background-color: #4CAF50;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #searchInput {
+            display: none;
+        }
+
+        .dark-mode-result {
+            background-color: #444;
+            /* более светлый фон */
+            color: #fff;
+            border: 1px solid #888;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+        }
+
+
+
+
+        @media (max-width: 768px) {
+            .btn {
+                justify-content: flex-end;
+            }
+
+            .dropbtn,
+            .btn button {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+
+            #nextBtn {
+                width: 50%;
+                padding: 15px 15px;
+            }
+
+            .dropdown-content a {
+                font-size: 14px;
+                padding: 10px 12px;
+            }
+        }
+    </style>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <button class="theme-toggle">Темная/Светлая тема</button>
+        <div class="dropdown">
+            <button class="dropbtn" id="fileDropbtn">Выберите файл &#9660;</button>
+            <div class="dropdown-content" id="fileDropdownContent">
+                <label for="fileInput">Загрузить с устройства</label>
+                <input type="file" id="fileInput" class="custom-file-input">
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn" id="modeDropbtn">Режим &#9660;</button>
+            <div class="dropdown-content">
+                <a id="normalModeBtn" class="active">Обычный режим</a>
+                <a id="testModeBtn">Тест-кабинет</a>
+                <a id="quickReviewModeBtn">Режим быстрого повторения</a>
+            </div>
+        </div>
+        <div>
+            <input type="text" id="searchInput" placeholder="Поиск вопросов..." oninput="searchQuestions()">
+        </div>
+        <hr>
+        <div class="file-info" id="fileInfo"></div>
+        <div id="question-container"></div>
+        <div class="btn">
+            <button id="nextBtn">Далее</button>
+            <button id="skipBtn" style="display: none;">Пропустить</button>
+        </div>
+        <div id="result-container" style="display: none;"></div>
+    </div>
+
+    <script>
+        /********************** Конфигурация сохранений **********************/
+        const STATE_VERSION = 1; // При изменении логики увеличивайте это число
+        const SAVE_EXPIRY = 48 * 60 * 60 * 1000; // 48 часов
+    
+        /********************** Глобальные переменные **********************/
+        let questions = [];
+        let originalQuestions = [];
+        let currentQuestionIndex = 0;
+        let startTime = null;
+        let answered = false;
+        let incorrectQuestions = [];
+        let incorrectAnswerCount = 0;
+        let isReviewMode = false;
+        let totalQuestionsCount = 0;
+        let endTime = null;
+        let testFinished = false; // Флаг: тест завершён
+        let lastTimeTaken = 0, lastIncorrectCount = 0; // Для отображения результатов
+    
+        /********************** Элементы DOM **********************/
+        const fileInput = document.getElementById('fileInput');
+        const questionContainer = document.getElementById('question-container');
+        const nextBtn = document.getElementById('nextBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        const resultContainer = document.getElementById('result-container');
+        const normalModeBtn = document.getElementById('normalModeBtn');
+        const testModeBtn = document.getElementById('testModeBtn');
+        const quickReviewModeBtn = document.getElementById('quickReviewModeBtn');
+        const fileDropdownContent = document.getElementById('fileDropdownContent');
+        const searchInput = document.getElementById('searchInput');
+        const modeDropbtn = document.getElementById('modeDropbtn'); // Кнопка для отображения выбранного режима
+    
+        /********************** Тема (сохранение выбранной темы) **********************/
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.querySelector('.container').classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.querySelector('.container').classList.remove('dark-mode');
+            }
+        }
+        // Переключение темы с сохранением
+        document.querySelector('.theme-toggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            document.querySelector('.container').classList.toggle('dark-mode');
+            if (document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+            // Если результаты уже отображены, обновляем оформление
+            if (resultContainer.style.display === 'block') {
+                showResult(lastTimeTaken, lastIncorrectCount);
+            }
+        });
+    
+        /********************** Debounce для поиска **********************/
+        let searchTimeout;
+        function debounceSearch(callback, delay = 300) {
+            return function (...args) {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => callback.apply(this, args), delay);
+            };
+        }
+        searchInput.addEventListener('input', debounceSearch(() => {
+            searchQuestions();
+        }, 300));
+    
+        /********************** Функции поиска и отображения **********************/
+        // Поиск вопросов (для режима быстрого повторения)
+        function searchQuestions() {
+            const searchValue = searchInput.value.toLowerCase();
+            const filtered = questions.filter(q => q.question.toLowerCase().includes(searchValue));
+            displayQuestions(filtered);
+        }
+        // Отрисовка списка вопросов (для быстрого повторения)
+        function displayQuestions(filteredQuestions) {
+            questionContainer.innerHTML = '';
+            filteredQuestions.forEach((q, index) => {
+                let choicesHTML = '';
+                q.choices.forEach(choice => {
+                    const answerClass = q.correctAnswers.includes(choice) ? 'correct-answer' : '';
+                    choicesHTML += `<br>--<label class="${answerClass}">${choice}</label><br>`;
+                });
+                const questionHTML = `
+                  <hr>
+                  <h5>Вопрос ${index + 1} / ${filteredQuestions.length}</h5>
+                  <h4>${q.question}</h4>
+                  ${choicesHTML}
+                  ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
+                `;
+                questionContainer.innerHTML += questionHTML;
+            });
+        }
+    
+        /********************** Загрузка теста **********************/
+        // Локальная загрузка теста с устройства
+        fileInput.addEventListener('change', (event) => {
+            localStorage.removeItem('testAppState');
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    questions = JSON.parse(e.target.result);
+                    originalQuestions = [...questions];
+                    restartTest();
+                } catch (err) {
+                    console.error('Ошибка парсинга JSON:', err);
+                }
+            };
+            reader.readAsText(file);
+        });
+        document.getElementById('fileDropbtn').addEventListener('click', () => {
+            fileInput.click();
+        });
+    
+        // Загрузка тестов с GitHub
+        async function loadFilesFromGitHub() {
+            const repoOwner = 'FORBIX7';
+            const repoName = 'lab02-';
+            const branch = 'TEST_22_37';
+            const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/?ref=${branch}`;
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error('Ошибка при получении данных с GitHub');
+                const files = await response.json();
+                displayGitHubFiles(files);
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        }
+        function displayGitHubFiles(files) {
+            fileDropdownContent.innerHTML = '';
+            files.forEach(file => {
+                if (file.type === 'file' && file.name.endsWith('.json')) {
+                    const fileLink = document.createElement('a');
+                    fileLink.href = '#';
+                    fileLink.textContent = file.name;
+                    fileLink.onclick = (e) => {
+                        e.preventDefault();
+                        loadQuestionsFromGitHub(file.download_url);
+                        updateDropdownText(file.name);
+                    };
+                    fileDropdownContent.appendChild(fileLink);
+                }
+            });
+        }
+        async function loadQuestionsFromGitHub(fileUrl) {
+            try {
+                const response = await fetch(fileUrl);
+                if (!response.ok) throw new Error('Ошибка при загрузке файла с GitHub');
+                const contents = await response.json();
+                questions = contents;
+                originalQuestions = [...contents];
+                restartTest();
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        }
+        function updateDropdownText(text) {
+            modeDropbtn.textContent = `${text} \u25BC`;
+        }
+    
+        /********************** Переключение режимов **********************/
+        function setMode(activeBtn) {
+            normalModeBtn.classList.remove('active');
+            testModeBtn.classList.remove('active');
+            quickReviewModeBtn.classList.remove('active');
+            activeBtn.classList.add('active');
+            // В режиме быстрого повторения показываем строку поиска, иначе скрываем
+            if (activeBtn === quickReviewModeBtn) {
+                searchInput.style.display = "block";
+            } else {
+                searchInput.style.display = "none";
+                searchInput.value = "";
+            }
+            testFinished = false;
+            restartTest();
+        }
+        normalModeBtn.addEventListener('click', () => {
+            setMode(normalModeBtn);
+            updateDropdownText(normalModeBtn.innerText);
+        });
+        testModeBtn.addEventListener('click', () => {
+            setMode(testModeBtn);
+            updateDropdownText(testModeBtn.innerText);
+        });
+        quickReviewModeBtn.addEventListener('click', () => {
+            setMode(quickReviewModeBtn);
+            updateDropdownText(quickReviewModeBtn.innerText);
+            // showQuickReviewMode() будет вызвана внутри restartTest(), если выбран этот режим.
+        });
+    
+        // Режим быстрого повторения: вывод всех вопросов с отметкой правильных ответов
+        function showQuickReviewMode() {
+            isReviewMode = true;
+            questionContainer.innerHTML = '';
+            questions.forEach((q, index) => {
+                let choicesHTML = '';
+                q.choices.forEach(choice => {
+                    const answerClass = q.correctAnswers.includes(choice) ? 'correct-answer' : '';
+                    choicesHTML += `<br>--<label class="${answerClass}">${choice}</label><br>`;
+                });
+                const questionHTML = `
+                  <hr>
+                  <h5>Вопрос ${index + 1} / ${totalQuestionsCount}</h5>
+                  <h4>${q.question}</h4>
+                  ${choicesHTML}
+                  ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
+                `;
+                questionContainer.innerHTML += questionHTML;
+            });
+            if (window.MathJax && MathJax.typesetPromise) {
+                MathJax.typesetPromise();
+            }
+        }
+    
+        /********************** Перезапуск теста **********************/
+        function restartTest() {
+            testFinished = false;
+            questionContainer.style.display = 'block';
+            nextBtn.style.display = 'block';
+            resultContainer.style.display = 'none';
+            currentQuestionIndex = 0;
+            incorrectQuestions = [];
+            startTime = null;
+            answered = false;
+            incorrectAnswerCount = 0;
+            isReviewMode = false;
+            testFinished = false;
+    
+            // Выбор набора вопросов в зависимости от режима:
+            if (testModeBtn.classList.contains('active')) {
+                questions = getRandomQuestions(50);
+            } else if (normalModeBtn.classList.contains('active') || quickReviewModeBtn.classList.contains('active')) {
+                questions = [...originalQuestions];
+            } else {
+                questions = [...originalQuestions]; // значение по умолчанию
+            }
+            totalQuestionsCount = questions.length;
+            
+            // Если выбран режим быстрого повторения, сразу отобразить все вопросы
+            if (quickReviewModeBtn.classList.contains('active')) {
+                showQuickReviewMode();
+            } else {
+                showQuestion();
+            }
+        }
+        function getRandomQuestions(count) {
+            const shuffled = [...originalQuestions].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, count);
+        }
+    
+        /********************** Функции работы с вопросами **********************/
+        // Сравнение массивов без учёта порядка
+        function arraysEqual(arr1, arr2) {
+            if (arr1.length !== arr2.length) return false;
+            const sorted1 = [...arr1].sort();
+            const sorted2 = [...arr2].sort();
+            return sorted1.every((value, index) => value === sorted2[index]);
+        }
+        // Отображение одного вопроса (для обычного и тестового режимов)
+        function showQuestion() {
+            if (questions.length === 0) {
+                questionContainer.innerHTML = '<p>Нет доступных вопросов.</p>';
+                return;
+            }
+            const question = questions[currentQuestionIndex];
+            let choicesHTML = '';
+            if (question.correctAnswers.length > 1) {
+                // Множественный выбор
+                choicesHTML = question.choices.map(choice => {
+                    return `<label style="display: block;">
+                            <input type="checkbox" name="answer" value="${choice}"> ${choice}
+                          </label><br>`;
+                }).join('');
+            } else {
+                // Один вариант ответа
+                choicesHTML = question.choices.map(choice => {
+                    return `<label style="display: block;">
+                            <input type="radio" name="answer" value="${choice}"> ${choice}
+                          </label><br>`;
+                }).join('');
+            }
+            const questionHTML = `
+                <p>${isReviewMode ? 'Работа над ошибками' : `Вопрос ${currentQuestionIndex + 1} / ${questions.length}`}</p>
+                <h4>${question.question}</h4>
+                ${choicesHTML}
+            `;
+            questionContainer.innerHTML = question.image
+                ? questionHTML + `<img src="${question.image}" alt="Изображение" style="max-width: 100%; height: auto;">`
+                : questionHTML;
+            if (window.MathJax && MathJax.typesetPromise) {
+                MathJax.typesetPromise();
+            }
+            if (!startTime) startTime = new Date();
+            skipBtn.style.display = isReviewMode ? 'block' : 'none';
+        }
+    
+        /********************** Обработка ответов **********************/
+        nextBtn.addEventListener('click', () => {
+            if (!answered) {
+                const selectedAnswers = Array.from(document.querySelectorAll('input[name="answer"]:checked'))
+                    .map(input => input.value);
+                const correctAnswers = questions[currentQuestionIndex].correctAnswers;
+                const isCorrect = arraysEqual(selectedAnswers, correctAnswers);
+                if (!isCorrect && !isReviewMode) {
+                    incorrectAnswerCount++;
+                }
+                showAnswerFeedback(selectedAnswers, correctAnswers, isCorrect);
+                answered = true;
+                saveAppState();
+                return;
+            }
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion();
+                answered = false;
+            } else {
+                if (incorrectQuestions.length > 0) {
+                    // Переходим в режим исправления ошибок
+                    currentQuestionIndex = 0;
+                    questions = incorrectQuestions;
+                    incorrectQuestions = [];
+                    isReviewMode = true;
+                    showQuestion();
+                    answered = false;
+                } else {
+                    endTime = new Date();
+                    const timeTaken = (endTime - startTime) / 1000;
+                    lastTimeTaken = timeTaken;
+                    lastIncorrectCount = incorrectAnswerCount;
+                    testFinished = true;
+                    showResult(timeTaken, incorrectAnswerCount);
+                }
+            }
+        });
+        skipBtn.addEventListener('click', () => {
+            endTime = new Date();
+            const timeTaken = (endTime - startTime) / 1000;
+            lastTimeTaken = timeTaken;
+            lastIncorrectCount = incorrectAnswerCount;
+            testFinished = true;
+            showResult(timeTaken, incorrectAnswerCount);
+        });
+        // Отображение обратной связи по ответу
+        function showAnswerFeedback(selectedAnswers, correctAnswers, isCorrect) {
+            const choices = questionContainer.querySelectorAll('input[name="answer"]');
+            choices.forEach(choice => {
+                choice.parentElement.classList.remove('incorrect-answer', 'correct-answer', 'partially-correct-answer');
+                const isSelected = selectedAnswers.includes(choice.value);
+                const isAnswerCorrect = correctAnswers.includes(choice.value);
+                if (isSelected && isAnswerCorrect) {
+                    choice.parentElement.classList.add('correct-answer');
+                } else if (isSelected && !isAnswerCorrect) {
+                    choice.parentElement.classList.add('incorrect-answer');
+                } else if (!isSelected && isAnswerCorrect) {
+                    choice.parentElement.classList.add('partially-correct-answer');
+                }
+                choice.disabled = true;
+            });
+            if (!isCorrect) {
+                incorrectQuestions.push(questions[currentQuestionIndex]);
+            }
+        }
+        // Отображение результата теста
+        function showResult(timeTaken, incorrectAnswers) {
+            questionContainer.style.display = 'none';
+            nextBtn.style.display = 'none';
+            resultContainer.style.display = 'block';
+            let resultHTML = `
+                <h2>Статистика</h2>
+                <p>Время прохождения: ${timeTaken} секунд</p>
+                <p>Количество ошибок: ${incorrectAnswers}</p>
+            `;
+            if (document.body.classList.contains('dark-mode')) {
+                resultContainer.classList.add('dark-mode-result');
+            } else {
+                resultContainer.classList.remove('dark-mode-result');
+            }
+            resultContainer.innerHTML = resultHTML;
+        }
+    
+        /********************** Система сохранений **********************/
+        // Сохранение состояния в localStorage
+        function saveAppState() {
+            const state = {
+                version: STATE_VERSION,
+                timestamp: Date.now(),
+                questions,
+                originalQuestions,
+                currentQuestionIndex,
+                startTime: startTime ? startTime.toISOString() : null,
+                answered,
+                incorrectQuestions,
+                incorrectAnswerCount,
+                isReviewMode,
+                totalQuestionsCount,
+                testFinished,
+                lastTimeTaken,
+                lastIncorrectCount
+            };
+            localStorage.setItem('testAppState', JSON.stringify(state));
+        }
+        // Загрузка состояния из localStorage с проверкой версии и срока действия
+        function loadAppState() {
+            const saved = localStorage.getItem('testAppState');
+            if (saved) {
+                try {
+                    const state = JSON.parse(saved);
+                    if (state.version !== STATE_VERSION) {
+                        console.warn('Сохранённое состояние имеет другую версию. Игнорирую сохранение.');
+                        restartTest();
+                        return;
+                    }
+                    if (Date.now() - state.timestamp > SAVE_EXPIRY) {
+                        console.warn('Сохранённое состояние устарело. Игнорирую сохранение.');
+                        restartTest();
+                        return;
+                    }
+                    questions = state.questions;
+                    originalQuestions = state.originalQuestions;
+                    currentQuestionIndex = state.currentQuestionIndex;
+                    startTime = state.startTime ? new Date(state.startTime) : null;
+                    answered = state.answered;
+                    incorrectQuestions = state.incorrectQuestions;
+                    incorrectAnswerCount = state.incorrectAnswerCount;
+                    isReviewMode = state.isReviewMode;
+                    totalQuestionsCount = state.totalQuestionsCount;
+                    testFinished = state.testFinished;
+                    lastTimeTaken = state.lastTimeTaken;
+                    lastIncorrectCount = state.lastIncorrectCount;
+                    if (testFinished) {
+                        showResult(lastTimeTaken, lastIncorrectCount);
+                    } else {
+                        if (quickReviewModeBtn.classList.contains('active')) {
+                            showQuickReviewMode();
+                        } else {
+                            showQuestion();
+                        }
+                    }
+                } catch (err) {
+                    console.error('Ошибка загрузки состояния', err);
+                    restartTest();
+                }
+            } else {
+                restartTest();
+            }
+        }
+    
+        /********************** Инициализация **********************/
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            loadFilesFromGitHub();
+            loadAppState();
+        });
+        window.addEventListener('beforeunload', saveAppState);
+    </script>
+    
+</body>
+
+</html>
