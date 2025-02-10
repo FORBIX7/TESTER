@@ -289,13 +289,17 @@
 <body>
     <div class="container">
         <button class="theme-toggle">Темная/Светлая тема</button>
+
+        <!-- Dropdown для выбора файла (локальный или с GitHub) -->
         <div class="dropdown">
-            <button class="dropbtn" id="fileDropbtn">Выберите файл &#9660;</button>
+            <button class="dropbtn" id="fileDropbtn">Выберите тестовый файл &#9660;</button>
             <div class="dropdown-content" id="fileDropdownContent">
-                <label for="fileInput">Загрузить с устройства</label>
-                <input type="file" id="fileInput" class="custom-file-input">
+                <!-- Первый пункт – локальная загрузка -->
+                <a href="#" id="localUploadLink">Загрузить с устройства</a>
             </div>
         </div>
+
+        <!-- Dropdown для выбора режима -->
         <div class="dropdown">
             <button class="dropbtn" id="modeDropbtn">Режим &#9660;</button>
             <div class="dropdown-content">
@@ -304,6 +308,7 @@
                 <a id="quickReviewModeBtn">Режим быстрого повторения</a>
             </div>
         </div>
+
         <div>
             <input type="text" id="searchInput" placeholder="Поиск вопросов..." oninput="searchQuestions()">
         </div>
@@ -315,13 +320,16 @@
             <button id="skipBtn" style="display: none;">Пропустить</button>
         </div>
         <div id="result-container" style="display: none;"></div>
+
+        <!-- Скрытый input для локальной загрузки файла -->
+        <input type="file" id="fileInput" class="custom-file-input" style="display: none;">
     </div>
 
     <script>
         /********************** Конфигурация сохранений **********************/
         const STATE_VERSION = 1; // При изменении логики увеличивайте это число
         const SAVE_EXPIRY = 48 * 60 * 60 * 1000; // 48 часов
-    
+
         /********************** Глобальные переменные **********************/
         let questions = [];
         let originalQuestions = [];
@@ -335,9 +343,12 @@
         let endTime = null;
         let testFinished = false; // Флаг: тест завершён
         let lastTimeTaken = 0, lastIncorrectCount = 0; // Для отображения результатов
-    
+
         /********************** Элементы DOM **********************/
         const fileInput = document.getElementById('fileInput');
+        const fileDropdownContent = document.getElementById('fileDropdownContent');
+        const fileDropbtn = document.getElementById('fileDropbtn');
+        const localUploadLink = document.getElementById('localUploadLink');
         const questionContainer = document.getElementById('question-container');
         const nextBtn = document.getElementById('nextBtn');
         const skipBtn = document.getElementById('skipBtn');
@@ -345,99 +356,12 @@
         const normalModeBtn = document.getElementById('normalModeBtn');
         const testModeBtn = document.getElementById('testModeBtn');
         const quickReviewModeBtn = document.getElementById('quickReviewModeBtn');
-        const fileDropdownContent = document.getElementById('fileDropdownContent');
         const searchInput = document.getElementById('searchInput');
-        const modeDropbtn = document.getElementById('modeDropbtn'); // Кнопка для отображения выбранного режима
-    
-        /********************** Тема (сохранение выбранной темы) **********************/
-        function loadTheme() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark') {
-                document.body.classList.add('dark-mode');
-                document.querySelector('.container').classList.add('dark-mode');
-            } else {
-                document.body.classList.remove('dark-mode');
-                document.querySelector('.container').classList.remove('dark-mode');
-            }
-        }
-        // Переключение темы с сохранением
-        document.querySelector('.theme-toggle').addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            document.querySelector('.container').classList.toggle('dark-mode');
-            if (document.body.classList.contains('dark-mode')) {
-                localStorage.setItem('theme', 'dark');
-            } else {
-                localStorage.setItem('theme', 'light');
-            }
-            // Если результаты уже отображены, обновляем оформление
-            if (resultContainer.style.display === 'block') {
-                showResult(lastTimeTaken, lastIncorrectCount);
-            }
-        });
-    
-        /********************** Debounce для поиска **********************/
-        let searchTimeout;
-        function debounceSearch(callback, delay = 300) {
-            return function (...args) {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => callback.apply(this, args), delay);
-            };
-        }
-        searchInput.addEventListener('input', debounceSearch(() => {
-            searchQuestions();
-        }, 300));
-    
-        /********************** Функции поиска и отображения **********************/
-        // Поиск вопросов (для режима быстрого повторения)
-        function searchQuestions() {
-            const searchValue = searchInput.value.toLowerCase();
-            const filtered = questions.filter(q => q.question.toLowerCase().includes(searchValue));
-            displayQuestions(filtered);
-        }
-        // Отрисовка списка вопросов (для быстрого повторения)
-        function displayQuestions(filteredQuestions) {
-            questionContainer.innerHTML = '';
-            filteredQuestions.forEach((q, index) => {
-                let choicesHTML = '';
-                q.choices.forEach(choice => {
-                    const answerClass = q.correctAnswers.includes(choice) ? 'correct-answer' : '';
-                    choicesHTML += `<br>--<label class="${answerClass}">${choice}</label><br>`;
-                });
-                const questionHTML = `
-                  <hr>
-                  <h5>Вопрос ${index + 1} / ${filteredQuestions.length}</h5>
-                  <h4>${q.question}</h4>
-                  ${choicesHTML}
-                  ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
-                `;
-                questionContainer.innerHTML += questionHTML;
-            });
-        }
-    
-        /********************** Загрузка теста **********************/
-        // Локальная загрузка теста с устройства
-        fileInput.addEventListener('change', (event) => {
-            localStorage.removeItem('testAppState');
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    questions = JSON.parse(e.target.result);
-                    originalQuestions = [...questions];
-                    restartTest();
-                } catch (err) {
-                    console.error('Ошибка парсинга JSON:', err);
-                }
-            };
-            reader.readAsText(file);
-        });
-        document.getElementById('fileDropbtn').addEventListener('click', () => {
-            fileInput.click();
-        });
-    
-        // Загрузка тестов с GitHub
+        const modeDropbtn = document.getElementById('modeDropbtn');
+
+        /********************** Загрузка тестов с GitHub **********************/
         async function loadFilesFromGitHub() {
+            // Жестко заданные параметры репозитория
             const repoOwner = 'FORBIX7';
             const repoName = 'lab02-';
             const branch = 'TEST_22_37';
@@ -451,23 +375,38 @@
                 console.error('Ошибка:', error);
             }
         }
+
         function displayGitHubFiles(files) {
+            // Сначала очищаем dropdown (оставляем локальную загрузку)
             fileDropdownContent.innerHTML = '';
+            const localUpload = document.createElement('a');
+            localUpload.href = '#';
+            localUpload.textContent = 'Загрузить с устройства';
+            localUpload.addEventListener('click', (e) => {
+                e.preventDefault();
+                fileInput.click();
+                updateFileDropdownText('Загрузить с устройства');
+            });
+            fileDropdownContent.appendChild(localUpload);
+
+            // Добавляем файлы из GitHub
             files.forEach(file => {
                 if (file.type === 'file' && file.name.endsWith('.json')) {
                     const fileLink = document.createElement('a');
                     fileLink.href = '#';
                     fileLink.textContent = file.name;
-                    fileLink.onclick = (e) => {
+                    fileLink.addEventListener('click', (e) => {
                         e.preventDefault();
                         loadQuestionsFromGitHub(file.download_url);
-                        updateDropdownText(file.name);
-                    };
+                        updateFileDropdownText(file.name);
+                    });
                     fileDropdownContent.appendChild(fileLink);
                 }
             });
         }
+
         async function loadQuestionsFromGitHub(fileUrl) {
+            localStorage.removeItem('testAppState');
             try {
                 const response = await fetch(fileUrl);
                 if (!response.ok) throw new Error('Ошибка при загрузке файла с GitHub');
@@ -479,65 +418,92 @@
                 console.error('Ошибка:', error);
             }
         }
-        function updateDropdownText(text) {
-            modeDropbtn.textContent = `${text} \u25BC`;
+
+        function updateFileDropdownText(text) {
+            fileDropbtn.textContent = `${text} \u25BC`;
         }
-    
-        /********************** Переключение режимов **********************/
-        function setMode(activeBtn) {
-            normalModeBtn.classList.remove('active');
-            testModeBtn.classList.remove('active');
-            quickReviewModeBtn.classList.remove('active');
-            activeBtn.classList.add('active');
-            // В режиме быстрого повторения показываем строку поиска, иначе скрываем
-            if (activeBtn === quickReviewModeBtn) {
-                searchInput.style.display = "block";
+
+        // Локальная загрузка файла
+        fileInput.addEventListener('change', (event) => {
+            localStorage.removeItem('testAppState');
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    questions = JSON.parse(e.target.result);
+                    originalQuestions = [...questions];
+                    restartTest();
+                    updateFileDropdownText(file.name);
+                } catch (err) {
+                    console.error('Ошибка парсинга JSON:', err);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        /********************** Тема (сохранение выбранной темы) **********************/
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.querySelector('.container').classList.add('dark-mode');
             } else {
-                searchInput.style.display = "none";
-                searchInput.value = "";
+                document.body.classList.remove('dark-mode');
+                document.querySelector('.container').classList.remove('dark-mode');
             }
-            testFinished = false;
-            restartTest();
         }
-        normalModeBtn.addEventListener('click', () => {
-            setMode(normalModeBtn);
-            updateDropdownText(normalModeBtn.innerText);
+        document.querySelector('.theme-toggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            document.querySelector('.container').classList.toggle('dark-mode');
+            if (document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+            if (resultContainer.style.display === 'block') {
+                showResult(lastTimeTaken, lastIncorrectCount);
+            }
         });
-        testModeBtn.addEventListener('click', () => {
-            setMode(testModeBtn);
-            updateDropdownText(testModeBtn.innerText);
-        });
-        quickReviewModeBtn.addEventListener('click', () => {
-            setMode(quickReviewModeBtn);
-            updateDropdownText(quickReviewModeBtn.innerText);
-            // showQuickReviewMode() будет вызвана внутри restartTest(), если выбран этот режим.
-        });
-    
-        // Режим быстрого повторения: вывод всех вопросов с отметкой правильных ответов
-        function showQuickReviewMode() {
-            isReviewMode = true;
+
+        /********************** Debounce для поиска **********************/
+        let searchTimeout;
+        function debounceSearch(callback, delay = 300) {
+            return function (...args) {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => callback.apply(this, args), delay);
+            };
+        }
+        searchInput.addEventListener('input', debounceSearch(() => {
+            searchQuestions();
+        }, 300));
+
+        /********************** Функции поиска и отображения вопросов **********************/
+        function searchQuestions() {
+            const searchValue = searchInput.value.toLowerCase();
+            const filtered = questions.filter(q => q.question.toLowerCase().includes(searchValue));
+            displayQuestions(filtered);
+        }
+        function displayQuestions(filteredQuestions) {
             questionContainer.innerHTML = '';
-            questions.forEach((q, index) => {
+            filteredQuestions.forEach((q, index) => {
                 let choicesHTML = '';
                 q.choices.forEach(choice => {
                     const answerClass = q.correctAnswers.includes(choice) ? 'correct-answer' : '';
                     choicesHTML += `<br>--<label class="${answerClass}">${choice}</label><br>`;
                 });
                 const questionHTML = `
-                  <hr>
-                  <h5>Вопрос ${index + 1} / ${totalQuestionsCount}</h5>
-                  <h4>${q.question}</h4>
-                  ${choicesHTML}
-                  ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
-                `;
+            <hr>
+            <h5>Вопрос ${index + 1} / ${filteredQuestions.length}</h5>
+            <h4>${q.question}</h4>
+            ${choicesHTML}
+            ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
+          `;
                 questionContainer.innerHTML += questionHTML;
             });
-            if (window.MathJax && MathJax.typesetPromise) {
-                MathJax.typesetPromise();
-            }
         }
-    
-        /********************** Перезапуск теста **********************/
+
+        /********************** Загрузка теста и режимы **********************/
         function restartTest() {
             testFinished = false;
             questionContainer.style.display = 'block';
@@ -550,18 +516,16 @@
             incorrectAnswerCount = 0;
             isReviewMode = false;
             testFinished = false;
-    
-            // Выбор набора вопросов в зависимости от режима:
+
             if (testModeBtn.classList.contains('active')) {
                 questions = getRandomQuestions(50);
             } else if (normalModeBtn.classList.contains('active') || quickReviewModeBtn.classList.contains('active')) {
                 questions = [...originalQuestions];
             } else {
-                questions = [...originalQuestions]; // значение по умолчанию
+                questions = [...originalQuestions];
             }
             totalQuestionsCount = questions.length;
-            
-            // Если выбран режим быстрого повторения, сразу отобразить все вопросы
+
             if (quickReviewModeBtn.classList.contains('active')) {
                 showQuickReviewMode();
             } else {
@@ -572,16 +536,13 @@
             const shuffled = [...originalQuestions].sort(() => Math.random() - 0.5);
             return shuffled.slice(0, count);
         }
-    
-        /********************** Функции работы с вопросами **********************/
-        // Сравнение массивов без учёта порядка
+
         function arraysEqual(arr1, arr2) {
             if (arr1.length !== arr2.length) return false;
             const sorted1 = [...arr1].sort();
             const sorted2 = [...arr2].sort();
             return sorted1.every((value, index) => value === sorted2[index]);
         }
-        // Отображение одного вопроса (для обычного и тестового режимов)
         function showQuestion() {
             if (questions.length === 0) {
                 questionContainer.innerHTML = '<p>Нет доступных вопросов.</p>';
@@ -590,25 +551,23 @@
             const question = questions[currentQuestionIndex];
             let choicesHTML = '';
             if (question.correctAnswers.length > 1) {
-                // Множественный выбор
                 choicesHTML = question.choices.map(choice => {
                     return `<label style="display: block;">
-                            <input type="checkbox" name="answer" value="${choice}"> ${choice}
-                          </label><br>`;
+                      <input type="checkbox" name="answer" value="${choice}"> ${choice}
+                    </label><br>`;
                 }).join('');
             } else {
-                // Один вариант ответа
                 choicesHTML = question.choices.map(choice => {
                     return `<label style="display: block;">
-                            <input type="radio" name="answer" value="${choice}"> ${choice}
-                          </label><br>`;
+                      <input type="radio" name="answer" value="${choice}"> ${choice}
+                    </label><br>`;
                 }).join('');
             }
             const questionHTML = `
-                <p>${isReviewMode ? 'Работа над ошибками' : `Вопрос ${currentQuestionIndex + 1} / ${questions.length}`}</p>
-                <h4>${question.question}</h4>
-                ${choicesHTML}
-            `;
+            <p>${isReviewMode ? 'Работа над ошибками' : `Вопрос ${currentQuestionIndex + 1} / ${questions.length}`}</p>
+            <h4>${question.question}</h4>
+            ${choicesHTML}
+        `;
             questionContainer.innerHTML = question.image
                 ? questionHTML + `<img src="${question.image}" alt="Изображение" style="max-width: 100%; height: auto;">`
                 : questionHTML;
@@ -618,8 +577,7 @@
             if (!startTime) startTime = new Date();
             skipBtn.style.display = isReviewMode ? 'block' : 'none';
         }
-    
-        /********************** Обработка ответов **********************/
+
         nextBtn.addEventListener('click', () => {
             if (!answered) {
                 const selectedAnswers = Array.from(document.querySelectorAll('input[name="answer"]:checked'))
@@ -640,7 +598,6 @@
                 answered = false;
             } else {
                 if (incorrectQuestions.length > 0) {
-                    // Переходим в режим исправления ошибок
                     currentQuestionIndex = 0;
                     questions = incorrectQuestions;
                     incorrectQuestions = [];
@@ -665,7 +622,6 @@
             testFinished = true;
             showResult(timeTaken, incorrectAnswerCount);
         });
-        // Отображение обратной связи по ответу
         function showAnswerFeedback(selectedAnswers, correctAnswers, isCorrect) {
             const choices = questionContainer.querySelectorAll('input[name="answer"]');
             choices.forEach(choice => {
@@ -685,16 +641,15 @@
                 incorrectQuestions.push(questions[currentQuestionIndex]);
             }
         }
-        // Отображение результата теста
         function showResult(timeTaken, incorrectAnswers) {
             questionContainer.style.display = 'none';
             nextBtn.style.display = 'none';
             resultContainer.style.display = 'block';
             let resultHTML = `
-                <h2>Статистика</h2>
-                <p>Время прохождения: ${timeTaken} секунд</p>
-                <p>Количество ошибок: ${incorrectAnswers}</p>
-            `;
+            <h2>Статистика</h2>
+            <p>Время прохождения: ${timeTaken} секунд</p>
+            <p>Количество ошибок: ${incorrectAnswers}</p>
+        `;
             if (document.body.classList.contains('dark-mode')) {
                 resultContainer.classList.add('dark-mode-result');
             } else {
@@ -702,9 +657,8 @@
             }
             resultContainer.innerHTML = resultHTML;
         }
-    
-        /********************** Система сохранений **********************/
-        // Сохранение состояния в localStorage
+
+        /********************** Сохранение состояния **********************/
         function saveAppState() {
             const state = {
                 version: STATE_VERSION,
@@ -724,7 +678,6 @@
             };
             localStorage.setItem('testAppState', JSON.stringify(state));
         }
-        // Загрузка состояния из localStorage с проверкой версии и срока действия
         function loadAppState() {
             const saved = localStorage.getItem('testAppState');
             if (saved) {
@@ -769,7 +722,60 @@
                 restartTest();
             }
         }
-    
+
+        function showQuickReviewMode() {
+            isReviewMode = true;
+            questionContainer.innerHTML = '';
+            questions.forEach((q, index) => {
+                let choicesHTML = '';
+                q.choices.forEach(choice => {
+                    const answerClass = q.correctAnswers.includes(choice) ? 'correct-answer' : '';
+                    choicesHTML += `<br>--<label class="${answerClass}">${choice}</label><br>`;
+                });
+                const questionHTML = `
+            <hr>
+            <h5>Вопрос ${index + 1} / ${totalQuestionsCount}</h5>
+            <h4>${q.question}</h4>
+            ${choicesHTML}
+            ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
+          `;
+                questionContainer.innerHTML += questionHTML;
+            });
+            if (window.MathJax && MathJax.typesetPromise) {
+                MathJax.typesetPromise();
+            }
+        }
+
+        normalModeBtn.addEventListener('click', () => {
+            normalModeBtn.classList.add('active');
+            testModeBtn.classList.remove('active');
+            quickReviewModeBtn.classList.remove('active');
+            searchInput.style.display = "none";
+            searchInput.value = "";
+            testFinished = false;
+            restartTest();
+            modeDropbtn.textContent = `Обычный режим \u25BC`;
+        });
+        testModeBtn.addEventListener('click', () => {
+            testModeBtn.classList.add('active');
+            normalModeBtn.classList.remove('active');
+            quickReviewModeBtn.classList.remove('active');
+            searchInput.style.display = "none";
+            searchInput.value = "";
+            testFinished = false;
+            restartTest();
+            modeDropbtn.textContent = `Тест-кабинет \u25BC`;
+        });
+        quickReviewModeBtn.addEventListener('click', () => {
+            quickReviewModeBtn.classList.add('active');
+            normalModeBtn.classList.remove('active');
+            testModeBtn.classList.remove('active');
+            searchInput.style.display = "block";
+            testFinished = false;
+            restartTest();
+            modeDropbtn.textContent = `Режим быстрого повторения \u25BC`;
+        });
+
         /********************** Инициализация **********************/
         document.addEventListener('DOMContentLoaded', () => {
             loadTheme();
@@ -778,7 +784,7 @@
         });
         window.addEventListener('beforeunload', saveAppState);
     </script>
-    
+
 </body>
 
 </html>
