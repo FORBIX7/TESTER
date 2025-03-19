@@ -309,12 +309,17 @@
                 <a id="rangeModeBtn">Режим выбора диапазона</a>
             </div>
         </div>
+        <!-- HTML: Блок выбора диапазона с доработанными кнопками -->
         <div id="range-selection" style="display:none; margin: 10px 0;">
             <input type="number" id="range-start" placeholder="От вопроса" min="1" style="width: 100px;">
             <input type="number" id="range-end" placeholder="До вопроса" min="1"
                 style="width: 100px; margin-left: 10px;">
-            <button id="apply-range-btn">Применить</button>
+            <button id="apply-range-btn" class="dropbtn" style="margin-left: 10px;">Применить</button>
+            <button id="randomize-range-btn" class="dropbtn"
+                style="margin-left: 10px; display:none;">Рандомизировать</button>
         </div>
+
+
         <div>
             <input type="text" id="searchInput" placeholder="Поиск вопросов..." oninput="searchQuestions()">
         </div>
@@ -333,7 +338,7 @@
 
     <script>
         /********************** Конфигурация сохранений **********************/
-        const STATE_VERSION = 1; // При изменении логики увеличивайте это число
+        const STATE_VERSION = 1;
         const SAVE_EXPIRY = 48 * 60 * 60 * 1000; // 48 часов
         const RESULTS_STORAGE_KEY = "monthlyTestResults";
     
@@ -348,9 +353,9 @@
         let isReviewMode = false;
         let totalQuestionsCount = 0;
         let endTime = null;
-        let testFinished = false; // Флаг: тест завершён
-        let lastTimeTaken = 0, lastIncorrectCount = 0; // Для отображения результатов
-        let currentPoints = 0; // Баллы за текущий тест
+        let testFinished = false;
+        let lastTimeTaken = 0, lastIncorrectCount = 0;
+        let currentPoints = 0;
     
         /********************** Элементы DOM **********************/
         const fileInput = document.getElementById('fileInput');
@@ -369,6 +374,7 @@
         const modeDropbtn = document.getElementById('modeDropbtn');
         const rangeSelectionDiv = document.getElementById('range-selection');
         const applyRangeBtn = document.getElementById('apply-range-btn');
+        const randomizeRangeBtn = document.getElementById('randomize-range-btn');
         const rangeStartInput = document.getElementById('range-start');
         const rangeEndInput = document.getElementById('range-end');
     
@@ -387,7 +393,6 @@
                 console.error('Ошибка:', error);
             }
         }
-    
         function displayGitHubFiles(files) {
             fileDropdownContent.innerHTML = '';
             const localUpload = document.createElement('a');
@@ -413,7 +418,6 @@
                 }
             });
         }
-    
         async function loadQuestionsFromGitHub(fileUrl) {
             localStorage.removeItem('testAppState');
             try {
@@ -427,11 +431,9 @@
                 console.error('Ошибка:', error);
             }
         }
-    
         function updateFileDropdownText(text) {
             fileDropbtn.textContent = `${text} \u25BC`;
         }
-    
         fileInput.addEventListener('change', (event) => {
             localStorage.removeItem('testAppState');
             const file = event.target.files[0];
@@ -485,7 +487,6 @@
         searchInput.addEventListener('input', debounceSearch(() => {
             searchQuestions();
         }, 300));
-    
         function searchQuestions() {
             const searchValue = searchInput.value.toLowerCase();
             const filtered = questions.filter(q => q.question.toLowerCase().includes(searchValue));
@@ -525,7 +526,7 @@
             isReviewMode = false;
             testFinished = false;
     
-            // Если выбран режим выбора диапазона, вопросы уже отфильтрованы
+            // Если выбран режим выбора диапазона, не переопределяем вопросы
             if (!rangeModeBtn.classList.contains('active')) {
                 if (testModeBtn.classList.contains('active')) {
                     questions = getRandomQuestions(50);
@@ -537,6 +538,12 @@
             }
             totalQuestionsCount = questions.length;
     
+            // Если активен режим диапазона, кнопка рандомизации видна
+            if(rangeModeBtn.classList.contains('active')){
+                randomizeRangeBtn.style.display = "inline-block";
+            } else {
+                randomizeRangeBtn.style.display = "none";
+            }
             if (quickReviewModeBtn.classList.contains('active')) {
                 showQuickReviewMode();
             } else {
@@ -597,7 +604,6 @@
                 if (!isCorrect && !isReviewMode) {
                     incorrectAnswerCount++;
                 }
-                // Начисляем баллы: за правильный ответ +10, за неправильный -5
                 currentPoints += isCorrect ? 10 : -5;
                 showAnswerFeedback(selectedAnswers, correctAnswers, isCorrect);
                 answered = true;
@@ -622,7 +628,6 @@
                     lastTimeTaken = timeTaken;
                     lastIncorrectCount = incorrectAnswerCount;
                     testFinished = true;
-                    // Сохраняем результат и показываем статистику
                     saveTestResult(timeTaken, incorrectAnswerCount, currentPoints);
                     showResult(timeTaken, incorrectAnswerCount, currentPoints);
                 }
@@ -723,7 +728,6 @@
                 restartTest();
             }
         }
-    
         function showQuickReviewMode() {
             isReviewMode = true;
             questionContainer.innerHTML = '';
@@ -788,7 +792,7 @@
             normalModeBtn.classList.remove('active');
             testModeBtn.classList.remove('active');
             quickReviewModeBtn.classList.remove('active');
-            // Показываем блок ввода диапазона
+            // Показываем блок ввода диапазона – он остаётся видимым для быстрого редактирования
             rangeSelectionDiv.style.display = "block";
             searchInput.style.display = "none";
             testFinished = false;
@@ -808,24 +812,30 @@
             answered = false;
             startTime = new Date();
             testFinished = false;
+            // Скрываем только поля ввода диапазона, оставляя кнопку рандомизации видимой
             rangeSelectionDiv.style.display = "none";
+            randomizeRangeBtn.style.display = "inline-block";
+            showQuestion();
+        });
+        // При клике на кнопку рандомизации перемешиваем вопросы и сбрасываем индекс
+        randomizeRangeBtn.addEventListener('click', () => {
+            questions = questions.sort(() => Math.random() - 0.5);
+            currentQuestionIndex = 0;
             showQuestion();
         });
     
         /********************** Статистика и сохранение результатов **********************/
-        // Сохраняем результат теста (результаты за текущий месяц)
         function saveTestResult(timeTaken, incorrectCount, points) {
             const now = new Date();
             const result = {
                 date: now.toISOString(),
-                timeTaken, // время в секундах
+                timeTaken,
                 incorrectCount,
                 points,
                 totalQuestions: totalQuestionsCount,
                 percentCorrect: (((totalQuestionsCount - incorrectCount) / totalQuestionsCount) * 100).toFixed(2)
             };
             let results = JSON.parse(localStorage.getItem(RESULTS_STORAGE_KEY)) || [];
-            // Оставляем только результаты за текущий месяц
             results = results.filter(r => {
                 const rDate = new Date(r.date);
                 return rDate.getFullYear() === now.getFullYear() && rDate.getMonth() === now.getMonth();
@@ -833,7 +843,6 @@
             results.push(result);
             localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(results));
         }
-        // Отображаем детальную статистику с сравнением предыдущих попыток
         function showResult(timeTaken, incorrectCount, points) {
             questionContainer.style.display = 'none';
             nextBtn.style.display = 'none';
@@ -844,9 +853,7 @@
                 <p>Всего вопросов: ${totalQuestionsCount}</p>
                 <p>Процент правильных ответов: ${(((totalQuestionsCount - incorrectCount) / totalQuestionsCount) * 100).toFixed(2)}%</p>`;
             
-            // Выводим сравнение с предыдущими попытками за месяц
             const results = JSON.parse(localStorage.getItem(RESULTS_STORAGE_KEY)) || [];
-        
             resultContainer.innerHTML = resultHTML;
         }
     
@@ -858,6 +865,7 @@
         });
         window.addEventListener('beforeunload', saveAppState);
     </script>
+    
 </body>
 
 </html>
