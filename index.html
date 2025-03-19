@@ -306,9 +306,15 @@
                 <a id="normalModeBtn" class="active">Обычный режим</a>
                 <a id="testModeBtn">Тест-кабинет</a>
                 <a id="quickReviewModeBtn">Режим быстрого повторения</a>
+                <a id="rangeModeBtn">Режим выбора диапазона</a>
             </div>
         </div>
-
+        <div id="range-selection" style="display:none; margin: 10px 0;">
+            <input type="number" id="range-start" placeholder="От вопроса" min="1" style="width: 100px;">
+            <input type="number" id="range-end" placeholder="До вопроса" min="1"
+                style="width: 100px; margin-left: 10px;">
+            <button id="apply-range-btn">Применить</button>
+        </div>
         <div>
             <input type="text" id="searchInput" placeholder="Поиск вопросов..." oninput="searchQuestions()">
         </div>
@@ -329,7 +335,8 @@
         /********************** Конфигурация сохранений **********************/
         const STATE_VERSION = 1; // При изменении логики увеличивайте это число
         const SAVE_EXPIRY = 48 * 60 * 60 * 1000; // 48 часов
-
+        const RESULTS_STORAGE_KEY = "monthlyTestResults";
+    
         /********************** Глобальные переменные **********************/
         let questions = [];
         let originalQuestions = [];
@@ -343,7 +350,8 @@
         let endTime = null;
         let testFinished = false; // Флаг: тест завершён
         let lastTimeTaken = 0, lastIncorrectCount = 0; // Для отображения результатов
-
+        let currentPoints = 0; // Баллы за текущий тест
+    
         /********************** Элементы DOM **********************/
         const fileInput = document.getElementById('fileInput');
         const fileDropdownContent = document.getElementById('fileDropdownContent');
@@ -356,12 +364,16 @@
         const normalModeBtn = document.getElementById('normalModeBtn');
         const testModeBtn = document.getElementById('testModeBtn');
         const quickReviewModeBtn = document.getElementById('quickReviewModeBtn');
+        const rangeModeBtn = document.getElementById('rangeModeBtn');
         const searchInput = document.getElementById('searchInput');
         const modeDropbtn = document.getElementById('modeDropbtn');
-
+        const rangeSelectionDiv = document.getElementById('range-selection');
+        const applyRangeBtn = document.getElementById('apply-range-btn');
+        const rangeStartInput = document.getElementById('range-start');
+        const rangeEndInput = document.getElementById('range-end');
+    
         /********************** Загрузка тестов с GitHub **********************/
         async function loadFilesFromGitHub() {
-            // Жестко заданные параметры репозитория
             const repoOwner = 'FORBIX7';
             const repoName = 'lab02-';
             const branch = 'TEST_22_37';
@@ -375,9 +387,8 @@
                 console.error('Ошибка:', error);
             }
         }
-
+    
         function displayGitHubFiles(files) {
-            // Сначала очищаем dropdown (оставляем локальную загрузку)
             fileDropdownContent.innerHTML = '';
             const localUpload = document.createElement('a');
             localUpload.href = '#';
@@ -388,8 +399,6 @@
                 updateFileDropdownText('Загрузить с устройства');
             });
             fileDropdownContent.appendChild(localUpload);
-
-            // Добавляем файлы из GitHub
             files.forEach(file => {
                 if (file.type === 'file' && file.name.endsWith('.json')) {
                     const fileLink = document.createElement('a');
@@ -404,7 +413,7 @@
                 }
             });
         }
-
+    
         async function loadQuestionsFromGitHub(fileUrl) {
             localStorage.removeItem('testAppState');
             try {
@@ -418,12 +427,11 @@
                 console.error('Ошибка:', error);
             }
         }
-
+    
         function updateFileDropdownText(text) {
             fileDropbtn.textContent = `${text} \u25BC`;
         }
-
-        // Локальная загрузка файла
+    
         fileInput.addEventListener('change', (event) => {
             localStorage.removeItem('testAppState');
             const file = event.target.files[0];
@@ -441,7 +449,7 @@
             };
             reader.readAsText(file);
         });
-
+    
         /********************** Тема (сохранение выбранной темы) **********************/
         function loadTheme() {
             const savedTheme = localStorage.getItem('theme');
@@ -462,10 +470,10 @@
                 localStorage.setItem('theme', 'light');
             }
             if (resultContainer.style.display === 'block') {
-                showResult(lastTimeTaken, lastIncorrectCount);
+                showResult(lastTimeTaken, lastIncorrectCount, currentPoints);
             }
         });
-
+    
         /********************** Debounce для поиска **********************/
         let searchTimeout;
         function debounceSearch(callback, delay = 300) {
@@ -477,8 +485,7 @@
         searchInput.addEventListener('input', debounceSearch(() => {
             searchQuestions();
         }, 300));
-
-        /********************** Функции поиска и отображения вопросов **********************/
+    
         function searchQuestions() {
             const searchValue = searchInput.value.toLowerCase();
             const filtered = questions.filter(q => q.question.toLowerCase().includes(searchValue));
@@ -493,17 +500,17 @@
                     choicesHTML += `<br>--<label class="${answerClass}">${choice}</label><br>`;
                 });
                 const questionHTML = `
-            <hr>
-            <h5>Вопрос ${index + 1} / ${filteredQuestions.length}</h5>
-            <h4>${q.question}</h4>
-            ${choicesHTML}
-            ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
-          `;
+                <hr>
+                <h5>Вопрос ${index + 1} / ${filteredQuestions.length}</h5>
+                <h4>${q.question}</h4>
+                ${choicesHTML}
+                ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
+              `;
                 questionContainer.innerHTML += questionHTML;
             });
         }
-
-        /********************** Загрузка теста и режимы **********************/
+    
+        /********************** Режимы тестирования **********************/
         function restartTest() {
             testFinished = false;
             questionContainer.style.display = 'block';
@@ -514,18 +521,22 @@
             startTime = null;
             answered = false;
             incorrectAnswerCount = 0;
+            currentPoints = 0;
             isReviewMode = false;
             testFinished = false;
-
-            if (testModeBtn.classList.contains('active')) {
-                questions = getRandomQuestions(50);
-            } else if (normalModeBtn.classList.contains('active') || quickReviewModeBtn.classList.contains('active')) {
-                questions = [...originalQuestions];
-            } else {
-                questions = [...originalQuestions];
+    
+            // Если выбран режим выбора диапазона, вопросы уже отфильтрованы
+            if (!rangeModeBtn.classList.contains('active')) {
+                if (testModeBtn.classList.contains('active')) {
+                    questions = getRandomQuestions(50);
+                } else if (normalModeBtn.classList.contains('active') || quickReviewModeBtn.classList.contains('active')) {
+                    questions = [...originalQuestions];
+                } else {
+                    questions = [...originalQuestions];
+                }
             }
             totalQuestionsCount = questions.length;
-
+    
             if (quickReviewModeBtn.classList.contains('active')) {
                 showQuickReviewMode();
             } else {
@@ -536,7 +547,6 @@
             const shuffled = [...originalQuestions].sort(() => Math.random() - 0.5);
             return shuffled.slice(0, count);
         }
-
         function arraysEqual(arr1, arr2) {
             if (arr1.length !== arr2.length) return false;
             const sorted1 = [...arr1].sort();
@@ -553,21 +563,21 @@
             if (question.correctAnswers.length > 1) {
                 choicesHTML = question.choices.map(choice => {
                     return `<label style="display: block;">
-                      <input type="checkbox" name="answer" value="${choice}"> ${choice}
-                    </label><br>`;
+                          <input type="checkbox" name="answer" value="${choice}"> ${choice}
+                        </label><br>`;
                 }).join('');
             } else {
                 choicesHTML = question.choices.map(choice => {
                     return `<label style="display: block;">
-                      <input type="radio" name="answer" value="${choice}"> ${choice}
-                    </label><br>`;
+                          <input type="radio" name="answer" value="${choice}"> ${choice}
+                        </label><br>`;
                 }).join('');
             }
             const questionHTML = `
-            <p>${isReviewMode ? 'Работа над ошибками' : `Вопрос ${currentQuestionIndex + 1} / ${questions.length}`}</p>
-            <h4>${question.question}</h4>
-            ${choicesHTML}
-        `;
+                <p>${isReviewMode ? 'Работа над ошибками' : `Вопрос ${currentQuestionIndex + 1} / ${questions.length}`}</p>
+                <h4>${question.question}</h4>
+                ${choicesHTML}
+            `;
             questionContainer.innerHTML = question.image
                 ? questionHTML + `<img src="${question.image}" alt="Изображение" style="max-width: 100%; height: auto;">`
                 : questionHTML;
@@ -577,7 +587,7 @@
             if (!startTime) startTime = new Date();
             skipBtn.style.display = isReviewMode ? 'block' : 'none';
         }
-
+    
         nextBtn.addEventListener('click', () => {
             if (!answered) {
                 const selectedAnswers = Array.from(document.querySelectorAll('input[name="answer"]:checked'))
@@ -587,6 +597,8 @@
                 if (!isCorrect && !isReviewMode) {
                     incorrectAnswerCount++;
                 }
+                // Начисляем баллы: за правильный ответ +10, за неправильный -5
+                currentPoints += isCorrect ? 10 : -5;
                 showAnswerFeedback(selectedAnswers, correctAnswers, isCorrect);
                 answered = true;
                 saveAppState();
@@ -610,7 +622,9 @@
                     lastTimeTaken = timeTaken;
                     lastIncorrectCount = incorrectAnswerCount;
                     testFinished = true;
-                    showResult(timeTaken, incorrectAnswerCount);
+                    // Сохраняем результат и показываем статистику
+                    saveTestResult(timeTaken, incorrectAnswerCount, currentPoints);
+                    showResult(timeTaken, incorrectAnswerCount, currentPoints);
                 }
             }
         });
@@ -620,7 +634,8 @@
             lastTimeTaken = timeTaken;
             lastIncorrectCount = incorrectAnswerCount;
             testFinished = true;
-            showResult(timeTaken, incorrectAnswerCount);
+            saveTestResult(timeTaken, incorrectAnswerCount, currentPoints);
+            showResult(timeTaken, incorrectAnswerCount, currentPoints);
         });
         function showAnswerFeedback(selectedAnswers, correctAnswers, isCorrect) {
             const choices = questionContainer.querySelectorAll('input[name="answer"]');
@@ -641,24 +656,8 @@
                 incorrectQuestions.push(questions[currentQuestionIndex]);
             }
         }
-        function showResult(timeTaken, incorrectAnswers) {
-            questionContainer.style.display = 'none';
-            nextBtn.style.display = 'none';
-            resultContainer.style.display = 'block';
-            let resultHTML = `
-            <h2>Статистика</h2>
-            <p>Время прохождения: ${timeTaken} секунд</p>
-            <p>Количество ошибок: ${incorrectAnswers}</p>
-        `;
-            if (document.body.classList.contains('dark-mode')) {
-                resultContainer.classList.add('dark-mode-result');
-            } else {
-                resultContainer.classList.remove('dark-mode-result');
-            }
-            resultContainer.innerHTML = resultHTML;
-        }
-
-        /********************** Сохранение состояния **********************/
+    
+        /********************** Сохранение состояния теста **********************/
         function saveAppState() {
             const state = {
                 version: STATE_VERSION,
@@ -674,7 +673,8 @@
                 totalQuestionsCount,
                 testFinished,
                 lastTimeTaken,
-                lastIncorrectCount
+                lastIncorrectCount,
+                currentPoints
             };
             localStorage.setItem('testAppState', JSON.stringify(state));
         }
@@ -705,8 +705,9 @@
                     testFinished = state.testFinished;
                     lastTimeTaken = state.lastTimeTaken;
                     lastIncorrectCount = state.lastIncorrectCount;
+                    currentPoints = state.currentPoints;
                     if (testFinished) {
-                        showResult(lastTimeTaken, lastIncorrectCount);
+                        showResult(lastTimeTaken, lastIncorrectCount, currentPoints);
                     } else {
                         if (quickReviewModeBtn.classList.contains('active')) {
                             showQuickReviewMode();
@@ -722,7 +723,7 @@
                 restartTest();
             }
         }
-
+    
         function showQuickReviewMode() {
             isReviewMode = true;
             questionContainer.innerHTML = '';
@@ -733,23 +734,26 @@
                     choicesHTML += `<br>--<label class="${answerClass}">${choice}</label><br>`;
                 });
                 const questionHTML = `
-            <hr>
-            <h5>Вопрос ${index + 1} / ${totalQuestionsCount}</h5>
-            <h4>${q.question}</h4>
-            ${choicesHTML}
-            ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
-          `;
+                <hr>
+                <h5>Вопрос ${index + 1} / ${totalQuestionsCount}</h5>
+                <h4>${q.question}</h4>
+                ${choicesHTML}
+                ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
+              `;
                 questionContainer.innerHTML += questionHTML;
             });
             if (window.MathJax && MathJax.typesetPromise) {
                 MathJax.typesetPromise();
             }
         }
-
+    
+        /********************** Режимы переключения **********************/
         normalModeBtn.addEventListener('click', () => {
             normalModeBtn.classList.add('active');
             testModeBtn.classList.remove('active');
             quickReviewModeBtn.classList.remove('active');
+            rangeModeBtn.classList.remove('active');
+            rangeSelectionDiv.style.display = "none";
             searchInput.style.display = "none";
             searchInput.value = "";
             testFinished = false;
@@ -760,6 +764,8 @@
             testModeBtn.classList.add('active');
             normalModeBtn.classList.remove('active');
             quickReviewModeBtn.classList.remove('active');
+            rangeModeBtn.classList.remove('active');
+            rangeSelectionDiv.style.display = "none";
             searchInput.style.display = "none";
             searchInput.value = "";
             testFinished = false;
@@ -770,12 +776,80 @@
             quickReviewModeBtn.classList.add('active');
             normalModeBtn.classList.remove('active');
             testModeBtn.classList.remove('active');
+            rangeModeBtn.classList.remove('active');
+            rangeSelectionDiv.style.display = "none";
             searchInput.style.display = "block";
             testFinished = false;
             restartTest();
             modeDropbtn.textContent = `Режим быстрого повторения \u25BC`;
         });
-
+        rangeModeBtn.addEventListener('click', () => {
+            rangeModeBtn.classList.add('active');
+            normalModeBtn.classList.remove('active');
+            testModeBtn.classList.remove('active');
+            quickReviewModeBtn.classList.remove('active');
+            // Показываем блок ввода диапазона
+            rangeSelectionDiv.style.display = "block";
+            searchInput.style.display = "none";
+            testFinished = false;
+            modeDropbtn.textContent = `Режим выбора диапазона \u25BC`;
+        });
+        applyRangeBtn.addEventListener('click', () => {
+            const start = parseInt(rangeStartInput.value);
+            const end = parseInt(rangeEndInput.value);
+            if (isNaN(start) || isNaN(end) || start < 1 || end < start || end > originalQuestions.length) {
+                alert('Пожалуйста, введите корректный диапазон от 1 до ' + originalQuestions.length);
+                return;
+            }
+            questions = originalQuestions.slice(start - 1, end);
+            totalQuestionsCount = questions.length;
+            currentQuestionIndex = 0;
+            incorrectQuestions = [];
+            answered = false;
+            startTime = new Date();
+            testFinished = false;
+            rangeSelectionDiv.style.display = "none";
+            showQuestion();
+        });
+    
+        /********************** Статистика и сохранение результатов **********************/
+        // Сохраняем результат теста (результаты за текущий месяц)
+        function saveTestResult(timeTaken, incorrectCount, points) {
+            const now = new Date();
+            const result = {
+                date: now.toISOString(),
+                timeTaken, // время в секундах
+                incorrectCount,
+                points,
+                totalQuestions: totalQuestionsCount,
+                percentCorrect: (((totalQuestionsCount - incorrectCount) / totalQuestionsCount) * 100).toFixed(2)
+            };
+            let results = JSON.parse(localStorage.getItem(RESULTS_STORAGE_KEY)) || [];
+            // Оставляем только результаты за текущий месяц
+            results = results.filter(r => {
+                const rDate = new Date(r.date);
+                return rDate.getFullYear() === now.getFullYear() && rDate.getMonth() === now.getMonth();
+            });
+            results.push(result);
+            localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(results));
+        }
+        // Отображаем детальную статистику с сравнением предыдущих попыток
+        function showResult(timeTaken, incorrectCount, points) {
+            questionContainer.style.display = 'none';
+            nextBtn.style.display = 'none';
+            resultContainer.style.display = 'block';
+            let resultHTML = `<h2>Статистика теста</h2>
+                <p>Время прохождения: ${timeTaken} секунд</p>
+                <p>Ошибок: ${incorrectCount}</p>
+                <p>Всего вопросов: ${totalQuestionsCount}</p>
+                <p>Процент правильных ответов: ${(((totalQuestionsCount - incorrectCount) / totalQuestionsCount) * 100).toFixed(2)}%</p>`;
+            
+            // Выводим сравнение с предыдущими попытками за месяц
+            const results = JSON.parse(localStorage.getItem(RESULTS_STORAGE_KEY)) || [];
+        
+            resultContainer.innerHTML = resultHTML;
+        }
+    
         /********************** Инициализация **********************/
         document.addEventListener('DOMContentLoaded', () => {
             loadTheme();
@@ -784,7 +858,6 @@
         });
         window.addEventListener('beforeunload', saveAppState);
     </script>
-
 </body>
 
 </html>
