@@ -233,6 +233,7 @@
         #searchInput {
             width: 100%;
             padding: 10px;
+            margin-top: 30px;
             margin-bottom: 20px;
             border: 1px solid #ccc;
             border-radius: 5px;
@@ -256,6 +257,12 @@
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
         }
+
+        .highlight {
+            background-color: yellow;
+            /* Цвет подсветки */
+        }
+
 
 
 
@@ -341,7 +348,7 @@
         const STATE_VERSION = 1;
         const SAVE_EXPIRY = 48 * 60 * 60 * 1000; // 48 часов
         const RESULTS_STORAGE_KEY = "monthlyTestResults";
-    
+
         /********************** Глобальные переменные **********************/
         let questions = [];
         let originalQuestions = [];
@@ -356,7 +363,7 @@
         let testFinished = false;
         let lastTimeTaken = 0, lastIncorrectCount = 0;
         let currentPoints = 0;
-    
+
         /********************** Элементы DOM **********************/
         const fileInput = document.getElementById('fileInput');
         const fileDropdownContent = document.getElementById('fileDropdownContent');
@@ -377,7 +384,7 @@
         const randomizeRangeBtn = document.getElementById('randomize-range-btn');
         const rangeStartInput = document.getElementById('range-start');
         const rangeEndInput = document.getElementById('range-end');
-    
+
         /********************** Загрузка тестов с GitHub **********************/
         async function loadFilesFromGitHub() {
             const repoOwner = 'FORBIX7';
@@ -451,7 +458,7 @@
             };
             reader.readAsText(file);
         });
-    
+
         /********************** Тема (сохранение выбранной темы) **********************/
         function loadTheme() {
             const savedTheme = localStorage.getItem('theme');
@@ -475,7 +482,7 @@
                 showResult(lastTimeTaken, lastIncorrectCount, currentPoints);
             }
         });
-    
+
         /********************** Debounce для поиска **********************/
         let searchTimeout;
         function debounceSearch(callback, delay = 300) {
@@ -490,9 +497,10 @@
         function searchQuestions() {
             const searchValue = searchInput.value.toLowerCase();
             const filtered = questions.filter(q => q.question.toLowerCase().includes(searchValue));
-            displayQuestions(filtered);
+            displayQuestions(filtered, searchValue);
         }
-        function displayQuestions(filteredQuestions) {
+
+        function displayQuestions(filteredQuestions, searchValue) {
             questionContainer.innerHTML = '';
             filteredQuestions.forEach((q, index) => {
                 let choicesHTML = '';
@@ -500,17 +508,25 @@
                     const answerClass = q.correctAnswers.includes(choice) ? 'correct-answer' : '';
                     choicesHTML += `<br>--<label class="${answerClass}">${choice}</label><br>`;
                 });
+
+                // Подсветка совпавшего текста в вопросе
+                const highlightedQuestion = q.question.replace(
+                    new RegExp(searchValue, 'gi'),
+                    match => `<span class="highlight">${match}</span>`
+                );
+
                 const questionHTML = `
-                <hr>
-                <h5>Вопрос ${index + 1} / ${filteredQuestions.length}</h5>
-                <h4>${q.question}</h4>
-                ${choicesHTML}
-                ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
-              `;
+            <hr>
+            <h5>Вопрос ${index + 1} / ${filteredQuestions.length}</h5>
+            <h4>${highlightedQuestion}</h4>
+            ${choicesHTML}
+            ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
+        `;
                 questionContainer.innerHTML += questionHTML;
             });
         }
-    
+
+
         /********************** Режимы тестирования **********************/
         function restartTest() {
             testFinished = false;
@@ -525,7 +541,7 @@
             currentPoints = 0;
             isReviewMode = false;
             testFinished = false;
-    
+
             // Если выбран режим выбора диапазона, не переопределяем вопросы
             if (!rangeModeBtn.classList.contains('active')) {
                 if (testModeBtn.classList.contains('active')) {
@@ -537,9 +553,9 @@
                 }
             }
             totalQuestionsCount = questions.length;
-    
+
             // Если активен режим диапазона, кнопка рандомизации видна
-            if(rangeModeBtn.classList.contains('active')){
+            if (rangeModeBtn.classList.contains('active')) {
                 randomizeRangeBtn.style.display = "inline-block";
             } else {
                 randomizeRangeBtn.style.display = "none";
@@ -594,7 +610,7 @@
             if (!startTime) startTime = new Date();
             skipBtn.style.display = isReviewMode ? 'block' : 'none';
         }
-    
+
         nextBtn.addEventListener('click', () => {
             if (!answered) {
                 const selectedAnswers = Array.from(document.querySelectorAll('input[name="answer"]:checked'))
@@ -661,7 +677,7 @@
                 incorrectQuestions.push(questions[currentQuestionIndex]);
             }
         }
-    
+
         /********************** Сохранение состояния теста **********************/
         function saveAppState() {
             const state = {
@@ -750,7 +766,7 @@
                 MathJax.typesetPromise();
             }
         }
-    
+
         /********************** Режимы переключения **********************/
         normalModeBtn.addEventListener('click', () => {
             normalModeBtn.classList.add('active');
@@ -823,7 +839,7 @@
             currentQuestionIndex = 0;
             showQuestion();
         });
-    
+
         /********************** Статистика и сохранение результатов **********************/
         function saveTestResult(timeTaken, incorrectCount, points) {
             const now = new Date();
@@ -852,11 +868,11 @@
                 <p>Ошибок: ${incorrectCount}</p>
                 <p>Всего вопросов: ${totalQuestionsCount}</p>
                 <p>Процент правильных ответов: ${(((totalQuestionsCount - incorrectCount) / totalQuestionsCount) * 100).toFixed(2)}%</p>`;
-            
+
             const results = JSON.parse(localStorage.getItem(RESULTS_STORAGE_KEY)) || [];
             resultContainer.innerHTML = resultHTML;
         }
-    
+
         /********************** Инициализация **********************/
         document.addEventListener('DOMContentLoaded', () => {
             loadTheme();
@@ -865,7 +881,7 @@
         });
         window.addEventListener('beforeunload', saveAppState);
     </script>
-    
+
 </body>
 
 </html>
