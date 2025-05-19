@@ -369,6 +369,10 @@
             fetch('access.json')
                 .then(res => res.json())
                 .then(data => {
+                    console.log("user.id:", user.id, typeof user.id);
+                    console.log("allowed_ids:", data.allowed_ids, typeof data.allowed_ids[0]);
+                    console.log("Сравнение:", data.allowed_ids.includes(user.id.toString()));
+
                     if (data.allowed_ids.includes(user.id.toString())) {
 
                         localStorage.setItem('telegram_user', JSON.stringify(user));
@@ -400,6 +404,10 @@
                 fetch('access.json')
                     .then(res => res.json())
                     .then(data => {
+                        console.log("user.id:", user.id, typeof user.id);
+                        console.log("allowed_ids:", data.allowed_ids, typeof data.allowed_ids[0]);
+                        console.log("Сравнение:", data.allowed_ids.includes(user.id.toString()));
+
                         if (data.allowed_ids.includes(user.id.toString())) {
                             document.getElementById('auth-container').style.display = 'none';
                             document.querySelector('.container').style.display = 'block';
