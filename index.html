@@ -363,48 +363,73 @@
         <input type="file" id="fileInput" class="custom-file-input" style="display: none;">
     </div>
     <script>
-        let currentUser = null;
+    let currentUser = null;
 
-        function onTelegramAuth(user) {
-            currentUser = user;
+    function onTelegramAuth(user) {
+        currentUser = user;
+        fetch('access.json')
+            .then(res => res.json())
+            .then(data => {
+                if (data.allowed_ids.includes(user.id)) {
+                    localStorage.setItem('telegram_user', JSON.stringify(user));
+                    document.getElementById('auth-container').style.display = 'none';
+                    document.querySelector('.container').style.display = 'block';
+                } else {
+                    document.getElementById('auth-container').innerHTML = `
+                        <h2 style="color: red;">⛔ У вас нет доступа</h2>
+                        <p>Ваш Telegram ID: <strong>${user.id}</strong></p>
+                        <p>Отправьте этот ID администратору, чтобы получить доступ.</p>
+                        <button onclick="logout()" style="margin-top: 20px; padding: 10px 20px;">🔁 Повторить вход</button>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error("Ошибка при загрузке access.json:", error);
+                document.getElementById('auth-container').innerHTML = `
+                    <h2 style="color: red;">🚫 Ошибка доступа</h2>
+                    <p>Не удалось загрузить файл <code>access.json</code>.</p>
+                    <p>Проверьте подключение или свяжитесь с администратором.</p>
+                `;
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const saved = localStorage.getItem('telegram_user');
+        if (saved) {
+            const user = JSON.parse(saved);
             fetch('access.json')
                 .then(res => res.json())
                 .then(data => {
                     if (data.allowed_ids.includes(user.id)) {
-                        localStorage.setItem('telegram_user', JSON.stringify(user));
                         document.getElementById('auth-container').style.display = 'none';
-                        document.querySelector('.container').style.display = 'block'; // Показываем сайт
+                        document.querySelector('.container').style.display = 'block';
                     } else {
+                        localStorage.removeItem('telegram_user');
                         document.getElementById('auth-container').innerHTML = `
-  <h2 style="color: red;">⛔ У вас нет доступа</h2>
-  <p>Ваш Telegram ID: <strong>${user.id}</strong></p>
-  <p>Отправьте этот ID администратору, чтобы получить доступ.</p>
-`;
+                            <h2 style="color: red;">⛔ У вас больше нет доступа</h2>
+                            <p>Попробуйте снова или свяжитесь с администратором.</p>
+                            <button onclick="logout()" style="margin-top: 20px; padding: 10px 20px;">🔁 Повторить вход</button>
+                        `;
                     }
+                })
+                .catch(err => {
+                    console.error("Ошибка при загрузке access.json:", err);
+                    document.getElementById('auth-container').innerHTML = `
+                        <h2 style="color: red;">🚫 Ошибка доступа</h2>
+                        <p>Не удалось загрузить файл <code>access.json</code>.</p>
+                    `;
                 });
+        } else {
+            document.querySelector('.container').style.display = 'none';
         }
+    });
 
+    function logout() {
+        localStorage.removeItem('telegram_user');
+        location.reload();
+    }
+</script>
 
-        // Проверка при загрузке страницы
-        document.addEventListener('DOMContentLoaded', () => {
-            const saved = localStorage.getItem('telegram_user');
-            if (saved) {
-                const user = JSON.parse(saved);
-                fetch('access.json')
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.allowed_ids.includes(user.id)) {
-                            document.getElementById('auth-container').style.display = 'none';
-                            document.querySelector('.container').style.display = 'block';
-                        } else {
-                            localStorage.removeItem('telegram_user');
-                        }
-                    });
-            } else {
-                document.querySelector('.container').style.display = 'none';
-            }
-        });
-    </script>
 
     <script>
         /********************** Конфигурация сохранений **********************/
