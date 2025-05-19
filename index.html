@@ -369,7 +369,8 @@
             fetch('access.json')
                 .then(res => res.json())
                 .then(data => {
-                    if (data.allowed_ids.includes(user.id)) {
+                    if (data.allowed_ids.includes(user.id.toString())) {
+
                         localStorage.setItem('telegram_user', JSON.stringify(user));
                         document.getElementById('auth-container').style.display = 'none';
                         document.querySelector('.container').style.display = 'block';
@@ -399,7 +400,7 @@
                 fetch('access.json')
                     .then(res => res.json())
                     .then(data => {
-                        if (data.allowed_ids.includes(user.id)) {
+                        if (data.allowed_ids.includes(user.id.toString())) {
                             document.getElementById('auth-container').style.display = 'none';
                             document.querySelector('.container').style.display = 'block';
                         } else {
