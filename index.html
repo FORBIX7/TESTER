@@ -294,20 +294,7 @@
 </head>
 
 <body>
-    <div id="auth-container" style="text-align: center; margin-top: 100px;">
-        <h2>🔐 Авторизация через Telegram</h2>
-        <p>Войдите, чтобы получить доступ к тестам вашей группы.</p>
-
-        <script async src="https://telegram.org/js/telegram-widget.js?7" data-telegram-login="helpl_sql_bot"
-            data-size="large" data-radius="10" data-userpic="false" data-request-access="write"
-            data-auth-url="https://forbix7.github.io/TESTER/auth.html">
-            </script>
-
-    </div>
-
-
-
-    <div class="container" style="display: none;">
+    <div class="container">
         <button class="theme-toggle">Темная/Светлая тема</button>
 
         <!-- Dropdown для выбора группы (ветки GitHub) -->
@@ -361,84 +348,6 @@
         <!-- Скрытый input для локальной загрузки файла -->
         <input type="file" id="fileInput" class="custom-file-input" style="display: none;">
     </div>
-    <script>
-        let currentUser = null;
-
-        function onTelegramAuth(user) {
-            currentUser = user;
-            fetch('access.json')
-                .then(res => res.json())
-                .then(data => {
-                    console.log("user.id:", user.id, typeof user.id);
-                    console.log("allowed_ids:", data.allowed_ids, typeof data.allowed_ids[0]);
-                    console.log("Сравнение:", data.allowed_ids.includes(user.id.toString()));
-
-                    if (data.allowed_ids.includes(user.id.toString())) {
-
-                        localStorage.setItem('telegram_user', JSON.stringify(user));
-                        document.getElementById('auth-container').style.display = 'none';
-                        document.querySelector('.container').style.display = 'block';
-                    } else {
-                        document.getElementById('auth-container').innerHTML = `
-                        <h2 style="color: red;">⛔ У вас нет доступа</h2>
-                        <p>Ваш Telegram ID: <strong>${user.id}</strong></p>
-                        <p>Отправьте этот ID администратору, чтобы получить доступ.</p>
-                        <button onclick="logout()" style="margin-top: 20px; padding: 10px 20px;">🔁 Повторить вход</button>
-                    `;
-                    }
-                })
-                .catch(error => {
-                    console.error("Ошибка при загрузке access.json:", error);
-                    document.getElementById('auth-container').innerHTML = `
-                    <h2 style="color: red;">🚫 Ошибка доступа</h2>
-                    <p>Не удалось загрузить файл <code>access.json</code>.</p>
-                    <p>Проверьте подключение или свяжитесь с администратором.</p>
-                `;
-                });
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const saved = localStorage.getItem('telegram_user');
-            if (saved) {
-                const user = JSON.parse(saved);
-                fetch('access.json')
-                    .then(res => res.json())
-                    .then(data => {
-                        console.log("user.id:", user.id, typeof user.id);
-                        console.log("allowed_ids:", data.allowed_ids, typeof data.allowed_ids[0]);
-                        console.log("Сравнение:", data.allowed_ids.includes(user.id.toString()));
-
-                        if (data.allowed_ids.includes(user.id.toString())) {
-                            document.getElementById('auth-container').style.display = 'none';
-                            document.querySelector('.container').style.display = 'block';
-                        } else {
-                            localStorage.removeItem('telegram_user');
-                            document.getElementById('auth-container').innerHTML = `
-                            <h2 style="color: red;">⛔ У вас больше нет доступа</h2>
-                            <p>Попробуйте снова или свяжитесь с администратором.</p>
-                            <button onclick="logout()" style="margin-top: 20px; padding: 10px 20px;">🔁 Повторить вход</button>
-                        `;
-                        }
-                    })
-                    .catch(err => {
-                        console.error("Ошибка при загрузке access.json:", err);
-                        document.getElementById('auth-container').innerHTML = `
-                        <h2 style="color: red;">🚫 Ошибка доступа</h2>
-                        <p>Не удалось загрузить файл <code>access.json</code>.</p>
-                    `;
-                    });
-            } else {
-                document.querySelector('.container').style.display = 'none';
-            }
-        });
-
-        function logout() {
-            localStorage.removeItem('telegram_user');
-            location.reload();
-        }
-    </script>
-
-
 
     <script>
         /********************** Конфигурация сохранений **********************/
@@ -1016,11 +925,6 @@
             }
         }
 
-        function logout() {
-            localStorage.removeItem("telegram_user");
-            location.reload();
-        }
-
 
         /********************** Инициализация **********************/
         document.addEventListener('DOMContentLoaded', () => {
@@ -1030,19 +934,7 @@
             loadAppState();
         });
         window.addEventListener('beforeunload', saveAppState);
-        // Слушаем событие из auth.html
-        window.addEventListener("message", function (event) {
-            if (event.data && event.data.type === "telegram_auth") {
-                const user = event.data.user;
-                localStorage.setItem("telegram_user", JSON.stringify(user));
-                location.reload(); // обновим страницу и покажем интерфейс
-            }
-        });
-
     </script>
-    <button onclick="logout()"
-        style="position: fixed; bottom: 10px; right: 10px; padding: 8px 12px; background-color: #ccc; border-radius: 5px;">🚪
-        Выйти</button>
 
 </body>
 
