@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Telegram Авторизация</title>
+</head>
+<body>
+  <h2 style="text-align: center;">⏳ Завершаем авторизацию...</h2>
+
+  <script>
+    // Получаем параметры из строки запроса
+    const params = new URLSearchParams(window.location.search);
+
+    const user = {
+      id: params.get('id'),
+      first_name: params.get('first_name'),
+      last_name: params.get('last_name'),
+      username: params.get('username'),
+      photo_url: params.get('photo_url'),
+      auth_date: params.get('auth_date'),
+      hash: params.get('hash')
+    };
+
+    // Сохраняем пользователя в localStorage
+    localStorage.setItem('telegram_user', JSON.stringify(user));
+
+    // Обновляем родительское окно (ваш основной сайт)
+    if (window.opener) {
+      window.opener.location.reload();
+      window.close();
+    } else {
+      // fallback: редирект обратно на главную
+      window.location.href = "https://forbix7.github.io/TESTER/";
+    }
+  </script>
+</body>
+</html>
