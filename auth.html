@@ -21,16 +21,17 @@
       hash: params.get('hash')
     };
 
-    // Сохраняем пользователя в localStorage
-    localStorage.setItem('telegram_user', JSON.stringify(user));
-
-    // Обновляем родительское окно (ваш основной сайт)
-    if (window.opener) {
-      window.opener.location.reload();
-      window.close();
+    // Проверка, что пришёл ID от Telegram
+    if (user.id) {
+      localStorage.setItem('telegram_user', JSON.stringify(user));
+      if (window.opener) {
+        window.opener.location.reload(); // Обновим родительское окно
+        window.close(); // Закроем auth.html
+      } else {
+        window.location.href = "https://forbix7.github.io/TESTER/";
+      }
     } else {
-      // fallback: редирект обратно на главную
-      window.location.href = "https://forbix7.github.io/TESTER/";
+      document.body.innerHTML = "<h2 style='color:red; text-align:center;'>❌ Ошибка авторизации. Данные не получены.</h2>";
     }
   </script>
 </body>
