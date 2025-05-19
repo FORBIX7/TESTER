@@ -297,6 +297,12 @@
     <div class="container">
         <button class="theme-toggle">Темная/Светлая тема</button>
 
+        <!-- Dropdown для выбора группы (ветки GitHub) -->
+        <div class="dropdown">
+            <button class="dropbtn" id="branchDropbtn">Загрузка групп...</button>
+            <div class="dropdown-content" id="branchDropdownContent"></div>
+        </div>
+
         <!-- Dropdown для выбора файла (локальный или с GitHub) -->
         <div class="dropdown">
             <button class="dropbtn" id="fileDropbtn">Выберите тестовый файл &#9660;</button>
@@ -389,7 +395,8 @@
         async function loadFilesFromGitHub() {
             const repoOwner = 'FORBIX7';
             const repoName = 'lab02-';
-            const branch = 'TEST_22_37';
+            const branch = currentBranch;
+
             const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/?ref=${branch}`;
             try {
                 const response = await fetch(apiUrl);
@@ -873,10 +880,57 @@
             resultContainer.innerHTML = resultHTML;
         }
 
+        let currentBranch = localStorage.getItem('selectedBranch') || 'main';
+
+        function switchBranch(branchName) {
+            currentBranch = branchName;
+            localStorage.setItem('selectedBranch', branchName);
+            document.getElementById('branchDropbtn').textContent = `Группа: ${branchName} ▼`;
+            loadFilesFromGitHub(); // загрузка тестов из выбранной ветки
+        }
+
+        async function loadBranchesFromGitHub() {
+            const repoOwner = 'FORBIX7';
+            const repoName = 'lab02-';
+            const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/branches`;
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error('Ошибка при получении списка веток');
+
+                const branches = await response.json();
+                const dropdown = document.getElementById('branchDropdownContent');
+                dropdown.innerHTML = ''; // очищаем
+
+                // Добавляем ветки кроме main
+                branches
+                    .filter(branch => branch.name !== 'main')
+                    .forEach(branch => {
+                        const a = document.createElement('a');
+                        a.href = '#';
+                        a.textContent = branch.name;
+                        a.onclick = (e) => {
+                            e.preventDefault();
+                            switchBranch(branch.name);
+                        };
+                        dropdown.appendChild(a);
+                    });
+
+                // Показываем текущую ветку
+                document.getElementById('branchDropbtn').textContent = `Группа: ${currentBranch} ▼`;
+
+            } catch (error) {
+                console.error('Ошибка загрузки веток:', error);
+                document.getElementById('branchDropbtn').textContent = 'Ошибка загрузки групп ▼';
+            }
+        }
+
+
         /********************** Инициализация **********************/
         document.addEventListener('DOMContentLoaded', () => {
             loadTheme();
-            loadFilesFromGitHub();
+            loadBranchesFromGitHub(); // сначала подтягиваем список веток
+            loadFilesFromGitHub();     // потом загружаем файлы из выбранной ветки
             loadAppState();
         });
         window.addEventListener('beforeunload', saveAppState);
