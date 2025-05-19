@@ -294,15 +294,14 @@
 </head>
 
 <body>
-    <div id="auth-container">
-  <script async src="https://telegram.org/js/telegram-widget.js?7"
-          data-telegram-login="helpl_sql_bot" 
-          data-size="large"
-          data-userpic="false"
-          data-request-access="write"
-          data-on-auth="onTelegramAuth">
-  </script>
-</div>
+    <div id="auth-container" style="text-align: center; margin-top: 100px;">
+        <h2>Доступ к тестам только для авторизованных пользователей</h2>
+        <p>Войдите через Telegram, чтобы подтвердить, что вы из своей группы.</p>
+        <button id="tg-login-btn"
+            style="padding: 12px 24px; font-size: 18px; background-color: #0088cc; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            🔐 Войти через Telegram
+        </button>
+    </div>
 
     <div class="container" style="display: none;">
         <button class="theme-toggle">Темная/Светлая тема</button>
@@ -359,44 +358,69 @@
         <input type="file" id="fileInput" class="custom-file-input" style="display: none;">
     </div>
     <script>
-let currentUser = null;
+        let currentUser = null;
 
-function onTelegramAuth(user) {
-  currentUser = user;
-  fetch('access.json')
-    .then(res => res.json())
-    .then(data => {
-      if (data.allowed_ids.includes(user.id)) {
-        localStorage.setItem('telegram_user', JSON.stringify(user));
-        document.getElementById('auth-container').style.display = 'none';
-        document.querySelector('.container').style.display = 'block'; // Показываем сайт
-      } else {
-        alert("Нет доступа. Свяжитесь с админом.");
-      }
-    });
-}
-
-// Проверка при загрузке страницы
-document.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('telegram_user');
-  if (saved) {
-    const user = JSON.parse(saved);
-    fetch('access.json')
-      .then(res => res.json())
-      .then(data => {
-        if (data.allowed_ids.includes(user.id)) {
-          document.getElementById('auth-container').style.display = 'none';
-          document.querySelector('.container').style.display = 'block';
-        } else {
-          localStorage.removeItem('telegram_user');
+        function onTelegramAuth(user) {
+            currentUser = user;
+            fetch('access.json')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.allowed_ids.includes(user.id)) {
+                        localStorage.setItem('telegram_user', JSON.stringify(user));
+                        document.getElementById('auth-container').style.display = 'none';
+                        document.querySelector('.container').style.display = 'block'; // Показываем сайт
+                    } else {
+                        document.getElementById('auth-container').innerHTML = `
+  <h2 style="color: red;">⛔ У вас нет доступа</h2>
+  <p>Ваш Telegram ID: <strong>${user.id}</strong></p>
+  <p>Отправьте этот ID администратору, чтобы получить доступ.</p>
+`;
+                    }
+                });
         }
-      });
-  } else {
-    document.querySelector('.container').style.display = 'none';
-  }
-});
-</script>
 
+
+        // Проверка при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem('telegram_user');
+            if (saved) {
+                const user = JSON.parse(saved);
+                fetch('access.json')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.allowed_ids.includes(user.id)) {
+                            document.getElementById('auth-container').style.display = 'none';
+                            document.querySelector('.container').style.display = 'block';
+                        } else {
+                            localStorage.removeItem('telegram_user');
+                        }
+                    });
+            } else {
+                document.querySelector('.container').style.display = 'none';
+            }
+        });
+    </script>
+
+    <script>
+        function openTelegramLogin() {
+            const bot = "helpl_sql_bot"; // без @
+            const loginUrl = `https://oauth.telegram.org/auth?bot=${bot}&origin=${location.origin}&embed=1&request_access=write`;
+
+            const popup = window.open(loginUrl, "tg_login", "width=500,height=500");
+
+            window.addEventListener("message", function receive(event) {
+                if (event.origin !== "https://oauth.telegram.org") return;
+
+                const user = event.data;
+                onTelegramAuth(user); // передаём в основную функцию
+                popup.close();
+                window.removeEventListener("message", receive);
+            });
+        }
+
+        // Назначаем обработчик на кастомную кнопку Telegram
+        document.getElementById("tg-login-btn").addEventListener("click", openTelegramLogin);
+    </script>
 
     <script>
         /********************** Конфигурация сохранений **********************/
@@ -974,6 +998,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        function logout() {
+            localStorage.removeItem("telegram_user");
+            location.reload();
+        }
+
 
         /********************** Инициализация **********************/
         document.addEventListener('DOMContentLoaded', () => {
@@ -984,6 +1013,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         window.addEventListener('beforeunload', saveAppState);
     </script>
+    <button onclick="logout()"
+        style="position: fixed; bottom: 10px; right: 10px; padding: 8px 12px; background-color: #ccc; border-radius: 5px;">🚪
+        Выйти</button>
 
 </body>
 
