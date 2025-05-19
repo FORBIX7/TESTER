@@ -1026,6 +1026,15 @@
             loadAppState();
         });
         window.addEventListener('beforeunload', saveAppState);
+        // Слушаем событие из auth.html
+window.addEventListener("message", function (event) {
+  if (event.data && event.data.type === "telegram_auth") {
+    const user = event.data.user;
+    localStorage.setItem("telegram_user", JSON.stringify(user));
+    location.reload(); // обновим страницу и покажем интерфейс
+  }
+});
+
     </script>
     <button onclick="logout()"
         style="position: fixed; bottom: 10px; right: 10px; padding: 8px 12px; background-color: #ccc; border-radius: 5px;">🚪
