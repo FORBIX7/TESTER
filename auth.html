@@ -8,7 +8,6 @@
   <h2 style="text-align: center;">⏳ Завершаем авторизацию...</h2>
 
   <script>
-    // Получаем параметры из строки запроса
     const params = new URLSearchParams(window.location.search);
 
     const user = {
@@ -21,17 +20,12 @@
       hash: params.get('hash')
     };
 
-    // Проверка, что пришёл ID от Telegram
-    if (user.id) {
-      localStorage.setItem('telegram_user', JSON.stringify(user));
-      if (window.opener) {
-        window.opener.location.reload(); // Обновим родительское окно
-        window.close(); // Закроем auth.html
-      } else {
-        window.location.href = "https://forbix7.github.io/TESTER/";
-      }
+    if (user.id && window.opener) {
+      // Отправляем данные обратно в основное окно
+      window.opener.postMessage({ type: "telegram_auth", user }, "*");
+      window.close();
     } else {
-      document.body.innerHTML = "<h2 style='color:red; text-align:center;'>❌ Ошибка авторизации. Данные не получены.</h2>";
+      document.body.innerHTML = "<h2 style='color:red; text-align:center;'>❌ Ошибка авторизации</h2>";
     }
   </script>
 </body>
