@@ -305,7 +305,7 @@
     data-radius="10"
     data-userpic="false"
     data-request-access="write"
-    data-on-auth="onTelegramAuth">
+    data-auth-url="https://forbix7.github.io/TESTER/auth.html">
 </script>
 
 </div>
@@ -370,33 +370,32 @@
         let currentUser = null;
 
         function onTelegramAuth(user) {
-  currentUser = user;
-  fetch('access.json')
-    .then(res => res.json())
-    .then(data => {
-      if (data.allowed_ids.includes(user.id)) {
-        localStorage.setItem('telegram_user', JSON.stringify(user));
-        document.getElementById('auth-container').style.display = 'none';
-        document.querySelector('.container').style.display = 'block';
-      } else {
-        document.getElementById('auth-container').innerHTML = `
-          <h2 style="color: red;">⛔ У вас нет доступа</h2>
-          <p>Ваш Telegram ID: <strong>${user.id}</strong></p>
-          <p>Отправьте этот ID администратору, чтобы получить доступ.</p>
-          <button onclick="logout()" style="margin-top: 20px; padding: 10px 20px;">🔁 Повторить вход</button>
-        `;
-      }
-    })
-    .catch(error => {
-      console.error("Ошибка при загрузке access.json:", error);
-      document.getElementById('auth-container').innerHTML = `
-        <h2 style="color: red;">🚫 Ошибка доступа</h2>
-        <p>Не удалось загрузить файл <code>access.json</code>.</p>
-        <p>Проверьте подключение или свяжитесь с администратором.</p>
-      `;
-    });
-}
-
+            currentUser = user;
+            fetch('access.json')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.allowed_ids.includes(user.id)) {
+                        localStorage.setItem('telegram_user', JSON.stringify(user));
+                        document.getElementById('auth-container').style.display = 'none';
+                        document.querySelector('.container').style.display = 'block';
+                    } else {
+                        document.getElementById('auth-container').innerHTML = 
+                        <h2 style="color: red;">⛔ У вас нет доступа</h2>
+                        <p>Ваш Telegram ID: <strong>${user.id}</strong></p>
+                        <p>Отправьте этот ID администратору, чтобы получить доступ.</p>
+                        <button onclick="logout()" style="margin-top: 20px; padding: 10px 20px;">🔁 Повторить вход</button>
+                    ;
+                    }
+                })
+                .catch(error => {
+                    console.error("Ошибка при загрузке access.json:", error);
+                    document.getElementById('auth-container').innerHTML = 
+                    <h2 style="color: red;">🚫 Ошибка доступа</h2>
+                    <p>Не удалось загрузить файл <code>access.json</code>.</p>
+                    <p>Проверьте подключение или свяжитесь с администратором.</p>
+                ;
+                });
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             const saved = localStorage.getItem('telegram_user');
@@ -410,19 +409,19 @@
                             document.querySelector('.container').style.display = 'block';
                         } else {
                             localStorage.removeItem('telegram_user');
-                            document.getElementById('auth-container').innerHTML = `
+                            document.getElementById('auth-container').innerHTML = 
                             <h2 style="color: red;">⛔ У вас больше нет доступа</h2>
                             <p>Попробуйте снова или свяжитесь с администратором.</p>
                             <button onclick="logout()" style="margin-top: 20px; padding: 10px 20px;">🔁 Повторить вход</button>
-                        `;
+                        ;
                         }
                     })
                     .catch(err => {
                         console.error("Ошибка при загрузке access.json:", err);
-                        document.getElementById('auth-container').innerHTML = `
+                        document.getElementById('auth-container').innerHTML = 
                         <h2 style="color: red;">🚫 Ошибка доступа</h2>
                         <p>Не удалось загрузить файл <code>access.json</code>.</p>
-                    `;
+                    ;
                     });
             } else {
                 document.querySelector('.container').style.display = 'none';
@@ -485,7 +484,7 @@
             const repoName = 'lab02-';
             const branch = currentBranch;
 
-            const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/?ref=${branch}`;
+            const apiUrl = https://api.github.com/repos/${repoOwner}/${repoName}/contents/?ref=${branch};
             try {
                 const response = await fetch(apiUrl);
                 if (!response.ok) throw new Error('Ошибка при получении данных с GitHub');
@@ -534,7 +533,7 @@
             }
         }
         function updateFileDropdownText(text) {
-            fileDropbtn.textContent = `${text} \u25BC`;
+            fileDropbtn.textContent = ${text} \u25BC;
         }
         fileInput.addEventListener('change', (event) => {
             localStorage.removeItem('testAppState');
@@ -601,22 +600,22 @@
                 let choicesHTML = '';
                 q.choices.forEach(choice => {
                     const answerClass = q.correctAnswers.includes(choice) ? 'correct-answer' : '';
-                    choicesHTML += `<br>--<label class="${answerClass}">${choice}</label><br>`;
+                    choicesHTML += <br>--<label class="${answerClass}">${choice}</label><br>;
                 });
 
                 // Подсветка совпавшего текста в вопросе
                 const highlightedQuestion = q.question.replace(
                     new RegExp(searchValue, 'gi'),
-                    match => `<span class="highlight">${match}</span>`
+                    match => <span class="highlight">${match}</span>
                 );
 
-                const questionHTML = `
+                const questionHTML = 
             <hr>
             <h5>Вопрос ${index + 1} / ${filteredQuestions.length}</h5>
             <h4>${highlightedQuestion}</h4>
             ${choicesHTML}
-            ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
-        `;
+            ${q.image ? <img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;"> : ''}
+        ;
                 questionContainer.innerHTML += questionHTML;
             });
         }
@@ -680,24 +679,24 @@
             let choicesHTML = '';
             if (question.correctAnswers.length > 1) {
                 choicesHTML = question.choices.map(choice => {
-                    return `<label style="display: block;">
+                    return <label style="display: block;">
                           <input type="checkbox" name="answer" value="${choice}"> ${choice}
-                        </label><br>`;
+                        </label><br>;
                 }).join('');
             } else {
                 choicesHTML = question.choices.map(choice => {
-                    return `<label style="display: block;">
+                    return <label style="display: block;">
                           <input type="radio" name="answer" value="${choice}"> ${choice}
-                        </label><br>`;
+                        </label><br>;
                 }).join('');
             }
-            const questionHTML = `
-                <p>${isReviewMode ? 'Работа над ошибками' : `Вопрос ${currentQuestionIndex + 1} / ${questions.length}`}</p>
+            const questionHTML = 
+                <p>${isReviewMode ? 'Работа над ошибками' : Вопрос ${currentQuestionIndex + 1} / ${questions.length}}</p>
                 <h4>${question.question}</h4>
                 ${choicesHTML}
-            `;
+            ;
             questionContainer.innerHTML = question.image
-                ? questionHTML + `<img src="${question.image}" alt="Изображение" style="max-width: 100%; height: auto;">`
+                ? questionHTML + <img src="${question.image}" alt="Изображение" style="max-width: 100%; height: auto;">
                 : questionHTML;
             if (window.MathJax && MathJax.typesetPromise) {
                 MathJax.typesetPromise();
@@ -846,15 +845,15 @@
                 let choicesHTML = '';
                 q.choices.forEach(choice => {
                     const answerClass = q.correctAnswers.includes(choice) ? 'correct-answer' : '';
-                    choicesHTML += `<br>--<label class="${answerClass}">${choice}</label><br>`;
+                    choicesHTML += <br>--<label class="${answerClass}">${choice}</label><br>;
                 });
-                const questionHTML = `
+                const questionHTML = 
                 <hr>
                 <h5>Вопрос ${index + 1} / ${totalQuestionsCount}</h5>
                 <h4>${q.question}</h4>
                 ${choicesHTML}
-                ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
-              `;
+                ${q.image ? <img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;"> : ''}
+              ;
                 questionContainer.innerHTML += questionHTML;
             });
             if (window.MathJax && MathJax.typesetPromise) {
@@ -873,7 +872,7 @@
             searchInput.value = "";
             testFinished = false;
             restartTest();
-            modeDropbtn.textContent = `Обычный режим \u25BC`;
+            modeDropbtn.textContent = Обычный режим \u25BC;
         });
         testModeBtn.addEventListener('click', () => {
             testModeBtn.classList.add('active');
@@ -885,7 +884,7 @@
             searchInput.value = "";
             testFinished = false;
             restartTest();
-            modeDropbtn.textContent = `Тест-кабинет \u25BC`;
+            modeDropbtn.textContent = Тест-кабинет \u25BC;
         });
         quickReviewModeBtn.addEventListener('click', () => {
             quickReviewModeBtn.classList.add('active');
@@ -896,7 +895,7 @@
             searchInput.style.display = "block";
             testFinished = false;
             restartTest();
-            modeDropbtn.textContent = `Режим быстрого повторения \u25BC`;
+            modeDropbtn.textContent = Режим быстрого повторения \u25BC;
         });
         rangeModeBtn.addEventListener('click', () => {
             rangeModeBtn.classList.add('active');
@@ -907,7 +906,7 @@
             rangeSelectionDiv.style.display = "block";
             searchInput.style.display = "none";
             testFinished = false;
-            modeDropbtn.textContent = `Режим выбора диапазона \u25BC`;
+            modeDropbtn.textContent = Режим выбора диапазона \u25BC;
         });
         applyRangeBtn.addEventListener('click', () => {
             const start = parseInt(rangeStartInput.value);
@@ -958,11 +957,11 @@
             questionContainer.style.display = 'none';
             nextBtn.style.display = 'none';
             resultContainer.style.display = 'block';
-            let resultHTML = `<h2>Статистика теста</h2>
+            let resultHTML = <h2>Статистика теста</h2>
                 <p>Время прохождения: ${timeTaken} секунд</p>
                 <p>Ошибок: ${incorrectCount}</p>
                 <p>Всего вопросов: ${totalQuestionsCount}</p>
-                <p>Процент правильных ответов: ${(((totalQuestionsCount - incorrectCount) / totalQuestionsCount) * 100).toFixed(2)}%</p>`;
+                <p>Процент правильных ответов: ${(((totalQuestionsCount - incorrectCount) / totalQuestionsCount) * 100).toFixed(2)}%</p>;
 
             const results = JSON.parse(localStorage.getItem(RESULTS_STORAGE_KEY)) || [];
             resultContainer.innerHTML = resultHTML;
@@ -973,14 +972,14 @@
         function switchBranch(branchName) {
             currentBranch = branchName;
             localStorage.setItem('selectedBranch', branchName);
-            document.getElementById('branchDropbtn').textContent = `Группа: ${branchName} ▼`;
+            document.getElementById('branchDropbtn').textContent = Группа: ${branchName} ▼;
             loadFilesFromGitHub(); // загрузка тестов из выбранной ветки
         }
 
         async function loadBranchesFromGitHub() {
             const repoOwner = 'FORBIX7';
             const repoName = 'lab02-';
-            const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/branches`;
+            const apiUrl = https://api.github.com/repos/${repoOwner}/${repoName}/branches;
 
             try {
                 const response = await fetch(apiUrl);
@@ -1005,7 +1004,7 @@
                     });
 
                 // Показываем текущую ветку
-                document.getElementById('branchDropbtn').textContent = `Группа: ${currentBranch} ▼`;
+                document.getElementById('branchDropbtn').textContent = Группа: ${currentBranch} ▼;
 
             } catch (error) {
                 console.error('Ошибка загрузки веток:', error);
