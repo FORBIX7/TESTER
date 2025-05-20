@@ -330,6 +330,7 @@
             <button id="apply-range-btn" class="dropbtn" style="margin-left: 10px;">Применить</button>
             <button id="randomize-range-btn" class="dropbtn"
                 style="margin-left: 10px; display:none;">Рандомизировать</button>
+            <div id="range-preview" style="margin-top: 10px; font-size: 14px; color: #333;"></div>
         </div>
 
 
@@ -369,6 +370,8 @@
         let testFinished = false;
         let lastTimeTaken = 0, lastIncorrectCount = 0;
         let currentPoints = 0;
+        const quickReviewChunkSize = 20;
+
 
         /********************** Элементы DOM **********************/
         const fileInput = document.getElementById('fileInput');
@@ -390,6 +393,11 @@
         const randomizeRangeBtn = document.getElementById('randomize-range-btn');
         const rangeStartInput = document.getElementById('range-start');
         const rangeEndInput = document.getElementById('range-end');
+        rangeStartInput.addEventListener('input', updateRangePreview);
+        rangeEndInput.addEventListener('input', updateRangePreview);
+
+        const rangePreviewDiv = document.getElementById('range-preview');
+
 
         /********************** Загрузка тестов с GitHub **********************/
         async function loadFilesFromGitHub() {
@@ -502,10 +510,53 @@
             searchQuestions();
         }, 300));
         function searchQuestions() {
-            const searchValue = searchInput.value.toLowerCase();
-            const filtered = questions.filter(q => q.question.toLowerCase().includes(searchValue));
-            displayQuestions(filtered, searchValue);
+            const searchValue = searchInput.value.toLowerCase().trim();
+
+            if (searchValue.length === 0) {
+                // 🔁 Вернуть отображение в режим быстрого повторения
+                if (quickReviewModeBtn.classList.contains('active')) {
+                    showQuickReviewMode();
+                } else {
+                    questionContainer.innerHTML = '<p>Введите хотя бы 2 символа для поиска.</p>';
+                }
+                return;
+            }
+
+            if (searchValue.length < 2) {
+                questionContainer.innerHTML = '<p>Введите хотя бы 2 символа для поиска.</p>';
+                return;
+            }
+
+            const filtered = originalQuestions.filter(q =>
+                q.question.toLowerCase().includes(searchValue)
+            );
+
+            if (filtered.length === 0) {
+                questionContainer.innerHTML = `<p>Ничего не найдено по запросу "<strong>${searchValue}</strong>".</p>`;
+                return;
+            }
+
+            questionContainer.innerHTML = filtered.map((q, index) => {
+                const highlighted = q.question.replace(
+                    new RegExp(searchValue, 'gi'),
+                    match => `<span class="highlight">${match}</span>`
+                );
+                const choices = q.choices.map(choice => {
+                    const isCorrect = q.correctAnswers.includes(choice);
+                    return `<div class="${isCorrect ? 'correct-answer' : ''}">— ${choice}</div>`;
+                }).join('');
+
+                return `
+            <hr>
+            <div style="margin-bottom: 1em;">
+                <strong>Вопрос:</strong> ${highlighted}<br>
+                ${choices}
+            </div>
+        `;
+            }).join('');
         }
+
+
 
         function displayQuestions(filteredQuestions, searchValue) {
             questionContainer.innerHTML = '';
@@ -549,16 +600,24 @@
             isReviewMode = false;
             testFinished = false;
 
+            // 🔧 Исправление: если "Быстрый повтор", загружаем все вопросы и сбрасываем offset
+            if (quickReviewModeBtn.classList.contains('active')) {
+                quickReviewOffset = 0;
+                questions = [...originalQuestions];             // ← ВАЖНО: не использовать обрезанный массив
+                questionContainer.innerHTML = '';               // ← очищаем контейнер
+                showQuickReviewMode();                          // ← запускаем режим
+                return;                                          // ← предотвращаем двойной вызов
+            }
+
             // Если выбран режим выбора диапазона, не переопределяем вопросы
             if (!rangeModeBtn.classList.contains('active')) {
                 if (testModeBtn.classList.contains('active')) {
                     questions = getRandomQuestions(50);
-                } else if (normalModeBtn.classList.contains('active') || quickReviewModeBtn.classList.contains('active')) {
-                    questions = [...originalQuestions];
                 } else {
                     questions = [...originalQuestions];
                 }
             }
+
             totalQuestionsCount = questions.length;
 
             // Если активен режим диапазона, кнопка рандомизации видна
@@ -567,12 +626,30 @@
             } else {
                 randomizeRangeBtn.style.display = "none";
             }
-            if (quickReviewModeBtn.classList.contains('active')) {
-                showQuickReviewMode();
-            } else {
-                showQuestion();
-            }
+
+            // Запуск вопросов
+            showQuestion();
         }
+
+        function updateRangePreview() {
+            const start = parseInt(rangeStartInput.value);
+            const end = parseInt(rangeEndInput.value);
+
+            if (isNaN(start) || isNaN(end) || start < 1 || end < start || end > originalQuestions.length) {
+                rangePreviewDiv.innerHTML = '<p style="color: red;">Некорректный диапазон</p>';
+                return;
+            }
+
+            const preview = originalQuestions.slice(start - 1, end)
+                .map((q, idx) => `<li>Вопрос ${start + idx}: ${q.question.substring(0, 80)}...</li>`)
+                .join('');
+
+            rangePreviewDiv.innerHTML = `
+        <p><strong>Предпросмотр (${end - start + 1} вопросов):</strong></p>
+        <ul style="padding-left: 20px;">${preview}</ul>
+    `;
+        }
+
         function getRandomQuestions(count) {
             const shuffled = [...originalQuestions].sort(() => Math.random() - 0.5);
             return shuffled.slice(0, count);
@@ -751,28 +828,60 @@
                 restartTest();
             }
         }
+        let quickReviewOffset = 0;
+
         function showQuickReviewMode() {
             isReviewMode = true;
-            questionContainer.innerHTML = '';
-            questions.forEach((q, index) => {
+
+            const visibleQuestions = originalQuestions.slice(quickReviewOffset, quickReviewOffset + quickReviewChunkSize);
+
+            visibleQuestions.forEach((q, index) => {
                 let choicesHTML = '';
                 q.choices.forEach(choice => {
                     const answerClass = q.correctAnswers.includes(choice) ? 'correct-answer' : '';
                     choicesHTML += `<br>--<label class="${answerClass}">${choice}</label><br>`;
                 });
+
                 const questionHTML = `
-                <hr>
-                <h5>Вопрос ${index + 1} / ${totalQuestionsCount}</h5>
-                <h4>${q.question}</h4>
-                ${choicesHTML}
-                ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
-              `;
+            <hr>
+            <h5>Вопрос ${quickReviewOffset + index + 1} / ${originalQuestions.length}</h5>
+            <h4>${q.question}</h4>
+            ${choicesHTML}
+            ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
+        `;
+
                 questionContainer.innerHTML += questionHTML;
             });
+
             if (window.MathJax && MathJax.typesetPromise) {
                 MathJax.typesetPromise();
             }
+
+            // Удаляем старую кнопку (если есть)
+            const oldButton = document.getElementById('loadMoreBtn');
+            if (oldButton) oldButton.remove();
+
+            // Добавляем кнопку, если остались ещё вопросы
+            if (quickReviewOffset + quickReviewChunkSize < originalQuestions.length) {
+                const loadMoreBtn = document.createElement('button');
+                loadMoreBtn.id = 'loadMoreBtn'; // для дальнейшего удаления
+                loadMoreBtn.textContent = 'Показать ещё';
+                loadMoreBtn.className = 'dropbtn';
+                loadMoreBtn.style.marginTop = '20px';
+                loadMoreBtn.style.display = 'block';
+                loadMoreBtn.style.marginLeft = 'auto';
+                loadMoreBtn.style.marginRight = 'auto';
+                loadMoreBtn.onclick = () => {
+                    quickReviewOffset += quickReviewChunkSize;
+                    showQuickReviewMode();
+                };
+                questionContainer.appendChild(loadMoreBtn);
+            }
+
         }
+
+
+
 
         /********************** Режимы переключения **********************/
         normalModeBtn.addEventListener('click', () => {
@@ -811,35 +920,59 @@
             modeDropbtn.textContent = `Режим быстрого повторения \u25BC`;
         });
         rangeModeBtn.addEventListener('click', () => {
-            rangeModeBtn.classList.add('active');
-            normalModeBtn.classList.remove('active');
-            testModeBtn.classList.remove('active');
-            quickReviewModeBtn.classList.remove('active');
-            // Показываем блок ввода диапазона – он остаётся видимым для быстрого редактирования
+            // Активируем кнопку режима
+            setActiveMode(rangeModeBtn);
+
+            // Отображаем нужные элементы
             rangeSelectionDiv.style.display = "block";
             searchInput.style.display = "none";
+            randomizeRangeBtn.style.display = "none"; // скрываем до применения диапазона
+            nextBtn.style.display = "none";           // скрываем "Далее", пока не применили
+            resultContainer.style.display = "none";   // убираем старую статистику
+
+            // Сброс состояния
+            questions = [];
+            questionContainer.innerHTML = '<p style="text-align:center;">Выберите диапазон и нажмите "Применить"</p>';
+            currentQuestionIndex = 0;
             testFinished = false;
-            modeDropbtn.textContent = `Режим выбора диапазона \u25BC`;
+
+            modeDropbtn.textContent = `Режим выбора диапазона ▼`;
         });
+        function setActiveMode(activeBtn) {
+            [normalModeBtn, testModeBtn, quickReviewModeBtn, rangeModeBtn].forEach(btn => {
+                btn.classList.remove('active');
+            });
+            activeBtn.classList.add('active');
+        }
+
+
         applyRangeBtn.addEventListener('click', () => {
             const start = parseInt(rangeStartInput.value);
             const end = parseInt(rangeEndInput.value);
+
             if (isNaN(start) || isNaN(end) || start < 1 || end < start || end > originalQuestions.length) {
-                alert('Пожалуйста, введите корректный диапазон от 1 до ' + originalQuestions.length);
+                alert('Введите корректный диапазон от 1 до ' + originalQuestions.length);
                 return;
             }
+
             questions = originalQuestions.slice(start - 1, end);
             totalQuestionsCount = questions.length;
             currentQuestionIndex = 0;
             incorrectQuestions = [];
             answered = false;
             startTime = new Date();
+            isReviewMode = false;
             testFinished = false;
-            // Скрываем только поля ввода диапазона, оставляя кнопку рандомизации видимой
-            rangeSelectionDiv.style.display = "none";
+
+
             randomizeRangeBtn.style.display = "inline-block";
+            nextBtn.style.display = "block";
+            rangePreviewDiv.innerHTML = '';
+
+
             showQuestion();
         });
+
         // При клике на кнопку рандомизации перемешиваем вопросы и сбрасываем индекс
         randomizeRangeBtn.addEventListener('click', () => {
             questions = questions.sort(() => Math.random() - 0.5);
