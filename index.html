@@ -214,15 +214,21 @@
         }
 
         .incorrect-answer {
-            background-color: #f44336 !important;
+            background-color: #e14c4c;
+            border-radius: 6px;
+            padding: 1px;
         }
 
         .correct-answer {
-            background-color: #4CAF50;
+            background-color: #81C784;
+            border-radius: 6px;
+            padding: 1px;
         }
 
         .partially-correct-answer {
-            background-color: #2196F3;
+            background-color: #64B5F6;
+            border-radius: 6px;
+            padding: 1px;
         }
 
         input[type="radio"]:checked+label,
@@ -263,6 +269,34 @@
             /* Цвет подсветки */
         }
 
+
+        #streakCounter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #ffcc70, #ff9a76);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #000;
+            box-shadow: 0 0 8px rgba(255, 150, 0, 0.5);
+            display: none;
+            z-index: 10;
+            animation: pulseBadge 1s ease infinite alternate;
+        }
+
+        @keyframes pulseBadge {
+            from {
+                transform: scale(1);
+                box-shadow: 0 0 5px rgba(255, 170, 0, 0.4);
+            }
+
+            to {
+                transform: scale(1.05);
+                box-shadow: 0 0 12px rgba(255, 100, 0, 0.8);
+            }
+        }
 
 
 
@@ -340,6 +374,12 @@
         <hr>
         <div class="file-info" id="fileInfo"></div>
         <div id="question-container"></div>
+        <!-- <div id="streakCounter">
+            🔥 <span id="streakText">Серия: </span><span id="streakValue">0</span>
+        </div> -->
+
+
+
         <div class="btn">
             <button id="nextBtn">Далее</button>
             <button id="skipBtn" style="display: none;">Пропустить</button>
@@ -371,6 +411,8 @@
         let lastTimeTaken = 0, lastIncorrectCount = 0;
         let currentPoints = 0;
         const quickReviewChunkSize = 20;
+        let currentStreak = 0;
+
 
 
         /********************** Элементы DOM **********************/
@@ -395,8 +437,40 @@
         const rangeEndInput = document.getElementById('range-end');
         rangeStartInput.addEventListener('input', updateRangePreview);
         rangeEndInput.addEventListener('input', updateRangePreview);
+        const streakEl = document.getElementById('streakCounter');
+        const streakValue = document.getElementById('streakValue');
 
         const rangePreviewDiv = document.getElementById('range-preview');
+
+        function updateStreak(isCorrect) {
+            if (!streakEl || !streakValue) return;
+
+            if (isCorrect) {
+                currentStreak++;
+                streakEl.style.display = 'block';
+                streakValue.textContent = currentStreak;
+
+                // Меняем текст в зависимости от длины серии
+                const text = currentStreak < 3 ? 'Серия: ' :
+                    currentStreak < 5 ? 'Разгон!' :
+                        currentStreak < 8 ? 'В потоке!' :
+                            '🔥 Не остановить!';
+                document.getElementById('streakText').textContent = text + ' ';
+
+                // Визуальный "всплеск"
+                streakEl.style.background = 'linear-gradient(135deg, #fff6b7, #fcd271)';
+                setTimeout(() => {
+                    streakEl.style.background = 'linear-gradient(135deg, #ffe29f, #ffa99f)';
+                }, 300);
+
+            } else {
+                currentStreak = 0;
+                streakEl.style.display = 'none';
+            }
+        }
+
+
+
 
 
         /********************** Загрузка тестов с GitHub **********************/
@@ -515,8 +589,12 @@
             if (searchValue.length === 0) {
                 // 🔁 Вернуть отображение в режим быстрого повторения
                 if (quickReviewModeBtn.classList.contains('active')) {
-                    showQuickReviewMode();
+                    // !!! ВОТ ЗДЕСЬ НУЖНЫ ИЗМЕНЕНИЯ !!!
+                    quickReviewOffset = 0; // Сбросить смещение на начало списка
+                    questionContainer.innerHTML = ''; // ОЧИСТИТЬ контейнер от результатов поиска
+                    showQuickReviewMode(); // Теперь показать вопросы с самого начала
                 } else {
+                    // Этот блок менее критичен, т.к. поиск активен только в режиме быстрого повторения
                     questionContainer.innerHTML = '<p>Введите хотя бы 2 символа для поиска.</p>';
                 }
                 return;
@@ -536,6 +614,7 @@
                 return;
             }
 
+            // Отображение результатов поиска (этот блок у тебя уже есть и он корректен для поиска)
             questionContainer.innerHTML = filtered.map((q, index) => {
                 const highlighted = q.question.replace(
                     new RegExp(searchValue, 'gi'),
@@ -551,9 +630,15 @@
             <div style="margin-bottom: 1em;">
                 <strong>Вопрос:</strong> ${highlighted}<br>
                 ${choices}
+                ${q.image ? `<img src="${q.image}" alt="Изображение" style="max-width: 100%; height: auto;">` : ''}
             </div>
         `;
             }).join('');
+
+            // Не забудь про MathJax, если он нужен для результатов поиска
+            if (window.MathJax && MathJax.typesetPromise) {
+                MathJax.typesetPromise();
+            }
         }
 
 
@@ -701,6 +786,8 @@
                     .map(input => input.value);
                 const correctAnswers = questions[currentQuestionIndex].correctAnswers;
                 const isCorrect = arraysEqual(selectedAnswers, correctAnswers);
+                updateStreak(isCorrect);
+
                 if (!isCorrect && !isReviewMode) {
                     incorrectAnswerCount++;
                 }
