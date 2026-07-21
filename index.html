@@ -589,12 +589,12 @@
             if (searchValue.length === 0) {
                 // 🔁 Вернуть отображение в режим быстрого повторения
                 if (quickReviewModeBtn.classList.contains('active')) {
-                    // !!! ВОТ ЗДЕСЬ НУЖНЫ ИЗМЕНЕНИЯ !!!
+                 
                     quickReviewOffset = 0; // Сбросить смещение на начало списка
                     questionContainer.innerHTML = ''; // ОЧИСТИТЬ контейнер от результатов поиска
                     showQuickReviewMode(); // Теперь показать вопросы с самого начала
                 } else {
-                    // Этот блок менее критичен, т.к. поиск активен только в режиме быстрого повторения
+                    
                     questionContainer.innerHTML = '<p>Введите хотя бы 2 символа для поиска.</p>';
                 }
                 return;
@@ -614,7 +614,7 @@
                 return;
             }
 
-            // Отображение результатов поиска (этот блок у тебя уже есть и он корректен для поиска)
+            // Отображение результатов поиска 
             questionContainer.innerHTML = filtered.map((q, index) => {
                 const highlighted = q.question.replace(
                     new RegExp(searchValue, 'gi'),
@@ -635,7 +635,7 @@
         `;
             }).join('');
 
-            // Не забудь про MathJax, если он нужен для результатов поиска
+            
             if (window.MathJax && MathJax.typesetPromise) {
                 MathJax.typesetPromise();
             }
@@ -685,7 +685,7 @@
             isReviewMode = false;
             testFinished = false;
 
-            // 🔧 Исправление: если "Быстрый повтор", загружаем все вопросы и сбрасываем offset
+            
             if (quickReviewModeBtn.classList.contains('active')) {
                 quickReviewOffset = 0;
                 questions = [...originalQuestions];             // ← ВАЖНО: не использовать обрезанный массив
@@ -694,7 +694,7 @@
                 return;                                          // ← предотвращаем двойной вызов
             }
 
-            // Если выбран режим выбора диапазона, не переопределяем вопросы
+         
             if (!rangeModeBtn.classList.contains('active')) {
                 if (testModeBtn.classList.contains('active')) {
                     questions = getRandomQuestions(50);
@@ -705,7 +705,7 @@
 
             totalQuestionsCount = questions.length;
 
-            // Если активен режим диапазона, кнопка рандомизации видна
+            
             if (rangeModeBtn.classList.contains('active')) {
                 randomizeRangeBtn.style.display = "inline-block";
             } else {
@@ -944,11 +944,11 @@
                 MathJax.typesetPromise();
             }
 
-            // Удаляем старую кнопку (если есть)
+          
             const oldButton = document.getElementById('loadMoreBtn');
             if (oldButton) oldButton.remove();
 
-            // Добавляем кнопку, если остались ещё вопросы
+          
             if (quickReviewOffset + quickReviewChunkSize < originalQuestions.length) {
                 const loadMoreBtn = document.createElement('button');
                 loadMoreBtn.id = 'loadMoreBtn'; // для дальнейшего удаления
@@ -1013,9 +1013,9 @@
             // Отображаем нужные элементы
             rangeSelectionDiv.style.display = "block";
             searchInput.style.display = "none";
-            randomizeRangeBtn.style.display = "none"; // скрываем до применения диапазона
-            nextBtn.style.display = "none";           // скрываем "Далее", пока не применили
-            resultContainer.style.display = "none";   // убираем старую статистику
+            randomizeRangeBtn.style.display = "none"; 
+            nextBtn.style.display = "none";           
+            resultContainer.style.display = "none";   
 
             // Сброс состояния
             questions = [];
@@ -1060,7 +1060,7 @@
             showQuestion();
         });
 
-        // При клике на кнопку рандомизации перемешиваем вопросы и сбрасываем индекс
+       
         randomizeRangeBtn.addEventListener('click', () => {
             questions = questions.sort(() => Math.random() - 0.5);
             currentQuestionIndex = 0;
@@ -1122,7 +1122,7 @@
                 const dropdown = document.getElementById('branchDropdownContent');
                 dropdown.innerHTML = ''; // очищаем
 
-                // Добавляем ветки кроме main
+                
                 branches
                     .filter(branch => branch.name !== 'main')
                     .forEach(branch => {
@@ -1149,8 +1149,8 @@
         /********************** Инициализация **********************/
         document.addEventListener('DOMContentLoaded', () => {
             loadTheme();
-            loadBranchesFromGitHub(); // сначала подтягиваем список веток
-            loadFilesFromGitHub();     // потом загружаем файлы из выбранной ветки
+            loadBranchesFromGitHub(); 
+            loadFilesFromGitHub();     
             loadAppState();
         });
         window.addEventListener('beforeunload', saveAppState);
