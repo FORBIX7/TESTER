@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Telegram Авторизация</title>
+</head>
+<body>
+  <h2 style="text-align: center;">⏳ Завершаем авторизацию...</h2>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+
+    const user = {
+      id: params.get('id'),
+      first_name: params.get('first_name'),
+      last_name: params.get('last_name'),
+      username: params.get('username'),
+      photo_url: params.get('photo_url'),
+      auth_date: params.get('auth_date'),
+      hash: params.get('hash')
+    };
+
+    if (user.id && window.opener) {
+      // Отправляем данные обратно в основное окно
+      window.opener.postMessage({ type: "telegram_auth", user }, "*");
+      window.close();
+    } else {
+      document.body.innerHTML = "<h2 style='color:red; text-align:center;'>❌ Ошибка авторизации</h2>";
+    }
+  </script>
+</body>
+</html>
